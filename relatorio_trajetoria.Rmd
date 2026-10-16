@@ -3,7 +3,7 @@ title: "Trajetória Metodológica e Construção do Projeto ALFA-Gen"
 output:
   pdf_document:
     latex_engine: xelatex
-geometry: margin=1.8cm
+geometry: margin=1.6cm
 fontsize: 11pt
 ---
 
@@ -19,4 +19,4 @@ Todo o processo de codificação e redação dos relatórios foi conduzido em pa
 
 Em seguida, foi elaborado um **último relatório dedicado aos três modelos de classificação** preditiva, seguindo o padrão rigoroso da ciência de dados (validação cruzada 5-fold e *holdout test* anti-vazamento). A escolha dos três algoritmos atendeu a papéis metodológicos complementares: a **Regressão Logística** atuou como o *baseline* linear clássico e interpretável; o **Random Forest** (baseado em *bagging*) forneceu robustez contra sobreajuste e capturou interações não-lineares; e o **LightGBM (Gradient Boosting)** foi escalado como o modelo de alta performance focado na minimização sequencial de resíduos — sagrando-se o campeão em acurácia (72,8%) e ROC-AUC (0,922). Todos os três modelos foram serializados em formato **ONNX** para produção.
 
-Por fim, para entregar valor direto aos professores, foi desenvolvida uma interface web simples e interativa utilizando **Streamlit**. O **gerador de texto similar** (o módulo *Gen*, integrando substituição por sinônimos mais frequentes, preservação de fórmulas e concordância nominal automática de artigos) foi inteiramente codificado pelo Gemini; meu papel consistiu na auditoria minuciosa da qualidade dos textos gerados até atingir o acabamento desejado.
+Por fim, para entregar valor direto aos professores, foi desenvolvida uma interface web simples e interativa utilizando **Streamlit**, com **deploy** ativo em nuvem para utilização pública. Todo o código do projeto foi rigorosamente versionado com **Git** e publicado no repositório oficial no **GitHub**. O **gerador de texto similar** (o módulo *Gen*, integrando substituição por sinônimos mais frequentes, preservação de fórmulas e concordância nominal automática de artigos) foi inteiramente codificado pelo Gemini; meu papel consistiu na auditoria minuciosa da qualidade dos textos gerados até atingir o acabamento desejado.
