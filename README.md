@@ -1,6 +1,8 @@
 # ALFA-Gen: Avaliação Linguística e Filtragem Automática — Generator
 
 > **ALFA-Gen** (**A**valiação **L**inguística e **F**iltragem **A**utomática — **Gen**erator) é um ecossistema integrado de Ciência de Dados, Linguística Computacional e Inteligência Artificial voltado à mensuração de complexidade textual, classificação de níveis de ensino em Língua Portuguesa e assistência pedagógica para elaboração de avaliações.
+>
+> 🌐 **Deploy Ativo (Streamlit Cloud):** [https://alfa-gen-mf7ewkugsz6zvada5trhqw.streamlit.app/](https://alfa-gen-mf7ewkugsz6zvada5trhqw.streamlit.app/)
 
 O projeto compreende a extração de **15 dimensões morfossintáticas e lexicais** a partir de um corpus de **2.076 textos reais**, relatórios analíticos univariados e multivariados em **R Markdown / XeLaTeX**, treinamento de modelos preditivos com validação cruzada 5-fold estratificada (*no leakage*), exportação dos modelos em formato **ONNX** para inferência de alta performance e uma aplicação interativa em **Streamlit** com motor de paráfrase baseado em sinônimos mais frequentes e concordância nominal automática.
 
@@ -179,13 +181,15 @@ python -c "import nltk; nltk.download('wordnet'); nltk.download('omw-1.4'); nltk
 
 ## Como Executar a Aplicação e os Scripts
 
-### 1. Iniciar a Aplicação Web Streamlit (Assistente do Professor)
+### 1. Aplicação Online vs. Execução Local
 
-Para executar o assistente interativo de paráfrase e avaliação de nível pedagógico:
+- 🌐 **Acesso Direto em Nuvem (Deploy Ativo):**  
+  👉 [https://alfa-gen-mf7ewkugsz6zvada5trhqw.streamlit.app/](https://alfa-gen-mf7ewkugsz6zvada5trhqw.streamlit.app/)
 
-```powershell
-streamlit run python/app.py
-```
+- 💻 **Execução Local (Streamlit):**
+  ```powershell
+  streamlit run python/app.py
+  ```
 
 Ou diretamente pelo `uv`:
 
