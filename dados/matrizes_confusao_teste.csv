@@ -1,0 +1,49 @@
+Modelo,Classe Real,Classe Predita,Contagem,Taxa Normalizada (%)
+Regressão Logística,Ensino Fundamental I,Ensino Fundamental I,50,84.7457627118644
+Regressão Logística,Ensino Fundamental I,Ensino Fundamental II,7,11.864406779661017
+Regressão Logística,Ensino Fundamental I,Ensino Médio,2,3.389830508474576
+Regressão Logística,Ensino Fundamental I,Ensino Superior,0,0.0
+Regressão Logística,Ensino Fundamental II,Ensino Fundamental I,10,15.384615384615385
+Regressão Logística,Ensino Fundamental II,Ensino Fundamental II,40,61.53846153846154
+Regressão Logística,Ensino Fundamental II,Ensino Médio,11,16.923076923076923
+Regressão Logística,Ensino Fundamental II,Ensino Superior,4,6.153846153846154
+Regressão Logística,Ensino Médio,Ensino Fundamental I,6,4.761904761904762
+Regressão Logística,Ensino Médio,Ensino Fundamental II,19,15.079365079365079
+Regressão Logística,Ensino Médio,Ensino Médio,83,65.87301587301587
+Regressão Logística,Ensino Médio,Ensino Superior,18,14.285714285714285
+Regressão Logística,Ensino Superior,Ensino Fundamental I,1,0.6024096385542169
+Regressão Logística,Ensino Superior,Ensino Fundamental II,20,12.048192771084338
+Regressão Logística,Ensino Superior,Ensino Médio,26,15.66265060240964
+Regressão Logística,Ensino Superior,Ensino Superior,119,71.6867469879518
+Random Forest,Ensino Fundamental I,Ensino Fundamental I,51,86.4406779661017
+Random Forest,Ensino Fundamental I,Ensino Fundamental II,5,8.47457627118644
+Random Forest,Ensino Fundamental I,Ensino Médio,2,3.389830508474576
+Random Forest,Ensino Fundamental I,Ensino Superior,1,1.694915254237288
+Random Forest,Ensino Fundamental II,Ensino Fundamental I,13,20.0
+Random Forest,Ensino Fundamental II,Ensino Fundamental II,39,60.0
+Random Forest,Ensino Fundamental II,Ensino Médio,11,16.923076923076923
+Random Forest,Ensino Fundamental II,Ensino Superior,2,3.076923076923077
+Random Forest,Ensino Médio,Ensino Fundamental I,7,5.555555555555555
+Random Forest,Ensino Médio,Ensino Fundamental II,14,11.11111111111111
+Random Forest,Ensino Médio,Ensino Médio,80,63.49206349206349
+Random Forest,Ensino Médio,Ensino Superior,25,19.841269841269842
+Random Forest,Ensino Superior,Ensino Fundamental I,2,1.2048192771084338
+Random Forest,Ensino Superior,Ensino Fundamental II,17,10.240963855421686
+Random Forest,Ensino Superior,Ensino Médio,17,10.240963855421686
+Random Forest,Ensino Superior,Ensino Superior,130,78.3132530120482
+LightGBM,Ensino Fundamental I,Ensino Fundamental I,48,81.35593220338984
+LightGBM,Ensino Fundamental I,Ensino Fundamental II,7,11.864406779661017
+LightGBM,Ensino Fundamental I,Ensino Médio,3,5.084745762711865
+LightGBM,Ensino Fundamental I,Ensino Superior,1,1.694915254237288
+LightGBM,Ensino Fundamental II,Ensino Fundamental I,10,15.384615384615385
+LightGBM,Ensino Fundamental II,Ensino Fundamental II,41,63.07692307692307
+LightGBM,Ensino Fundamental II,Ensino Médio,12,18.461538461538463
+LightGBM,Ensino Fundamental II,Ensino Superior,2,3.076923076923077
+LightGBM,Ensino Médio,Ensino Fundamental I,4,3.1746031746031744
+LightGBM,Ensino Médio,Ensino Fundamental II,10,7.936507936507936
+LightGBM,Ensino Médio,Ensino Médio,85,67.46031746031747
+LightGBM,Ensino Médio,Ensino Superior,27,21.428571428571427
+LightGBM,Ensino Superior,Ensino Fundamental I,2,1.2048192771084338
+LightGBM,Ensino Superior,Ensino Fundamental II,12,7.228915662650602
+LightGBM,Ensino Superior,Ensino Médio,23,13.855421686746988
+LightGBM,Ensino Superior,Ensino Superior,129,77.71084337349397

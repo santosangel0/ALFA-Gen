@@ -1,0 +1,11 @@
+path,id_original,nivel_completo,nivel,id_anonimo,n_caracteres,n_palavras
+dataset_caed/4_Ensino_Superior/187_1006.txt,187_1006.txt,Ensino Superior,Superior,ID_01,2602,401
+dataset_caed/4_Ensino_Superior/591_1623.txt,591_1623.txt,Ensino Superior,Superior,ID_02,2346,331
+dataset_caed/2_Ensino_Fundamental_II/68_2778.txt,68_2778.txt,Ensino Fundamental II,Fundamental II,ID_03,3120,507
+dataset_caed/2_Ensino_Fundamental_II/313_5144.txt,313_5144.txt,Ensino Fundamental II,Fundamental II,ID_04,2689,428
+dataset_caed/3_Ensino_Medio/222_1583.txt,222_1583.txt,Ensino Médio,Médio,ID_05,1745,301
+dataset_caed/1_Ensino_Fundamental_I/82_638.txt,82_638.txt,Ensino Fundamental I,Fundamental I,ID_06,1937,328
+dataset_caed/1_Ensino_Fundamental_I/280_839.txt,280_839.txt,Ensino Fundamental I,Fundamental I,ID_07,1811,314
+dataset_caed/3_Ensino_Medio/286_1647.txt,286_1647.txt,Ensino Médio,Médio,ID_08,2573,400
+dataset_caed/3_Ensino_Medio/334_1695.txt,334_1695.txt,Ensino Médio,Médio,ID_09,2061,336
+dataset_caed/1_Ensino_Fundamental_I/178_736.txt,178_736.txt,Ensino Fundamental I,Fundamental I,ID_10,1782,329

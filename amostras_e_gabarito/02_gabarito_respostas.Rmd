@@ -1,0 +1,130 @@
+---
+title: "Gabarito: Frases de Nível Desconhecido"
+subtitle: "Respostas Oficiais, Avaliação do Modelo Humano e Guia de Feature Engineering"
+author: "Projeto ALFA-Gen"
+date: "`r format(Sys.Date(), '%d/%m/%Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_sections: false
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Carregar os dados processados garantindo sincronia perfeita com o documento 01
+caminho_dados <- if (file.exists("dados/amostras_experimento.rds")) {
+  "dados/amostras_experimento.rds"
+} else if (file.exists("../dados/amostras_experimento.rds")) {
+  "../dados/amostras_experimento.rds"
+} else {
+  "dados/amostras_experimento.rds"
+}
+dados_exp <- readRDS(caminho_dados)
+```
+
+\newpage
+
+# Apresentação do Gabarito
+
+Este documento apresenta o gabarito oficial das 10 frases de nível desconhecido presentes na seção final do documento **`01_amostras_niveis_ensino.pdf`**.
+
+Utilize as tabelas a seguir para:
+
+1. **Conferir suas predições**: Verificar quais frases você classificou corretamente.
+2. **Mensurar sua acurácia baseline**: Calcular o percentual de acerto do seu "modelo humano" inicial.
+3. **Mapear hipóteses de *Feature Engineering***: Identificar quais pistas linguísticas orientaram seus acertos e quais características levaram a eventuais confusões entre níveis adjacentes.
+
+\vspace{0.5cm}
+
+# Tabela Oficial de Respostas
+
+A tabela abaixo relaciona o **ID Mascarado** de cada frase desconhecida com a **resposta correta (nível verdadeiro)**, além do identificador original no conjunto de dados e métricas básicas de extensão:
+
+```{r tabela-gabarito}
+tab_gabarito <- dados_exp$gabarito[, c("ID da Frase", "Nível Verdadeiro", "Nível Simplificado", "ID Original", "Nº Palavras", "Nº Caracteres")]
+
+knitr::kable(
+  tab_gabarito,
+  format = "latex",
+  booktabs = TRUE,
+  align = c("c", "l", "c", "c", "c", "c"),
+  caption = "Gabarito Oficial das Frases Desconhecidas (Teste Cego)"
+)
+```
+
+\vspace{0.5cm}
+
+## Resumo com Trecho Inicial de Cada Frase
+
+Para facilitar a conferência visual imediata de cada texto lido:
+
+```{r tabela-trechos}
+tab_trechos <- dados_exp$gabarito[, c("ID da Frase", "Nível Simplificado", "Início do Texto")]
+
+knitr::kable(
+  tab_trechos,
+  format = "latex",
+  booktabs = TRUE,
+  align = c("c", "c", "l"),
+  caption = "Identificação das Frases Desconhecidas pelo Trecho Inicial"
+)
+```
+
+\newpage
+
+# Folha de Avaliação do Modelo Humano
+
+Preencha a tabela abaixo com as suas anotações para calcular a performance do seu modelo intuitivo:
+
+| ID | Seu Palpite | Nível Real | Acertou? (Sim / Não) |
+|:---:|:---:|:---:|:---:|
+| `ID_01` | | `r tab_gabarito[1, "Nível Simplificado"]` | |
+| `ID_02` | | `r tab_gabarito[2, "Nível Simplificado"]` | |
+| `ID_03` | | `r tab_gabarito[3, "Nível Simplificado"]` | |
+| `ID_04` | | `r tab_gabarito[4, "Nível Simplificado"]` | |
+| `ID_05` | | `r tab_gabarito[5, "Nível Simplificado"]` | |
+| `ID_06` | | `r tab_gabarito[6, "Nível Simplificado"]` | |
+| `ID_07` | | `r tab_gabarito[7, "Nível Simplificado"]` | |
+| `ID_08` | | `r tab_gabarito[8, "Nível Simplificado"]` | |
+| `ID_09` | | `r tab_gabarito[9, "Nível Simplificado"]` | |
+| `ID_10` | | `r tab_gabarito[10, "Nível Simplificado"]` | |
+
+\vspace{0.4cm}
+
+### Cálculo da Acurácia Inicial:
+
+$$\text{Acurácia Baseline} = \frac{\text{Total de Acertos}}{10} \times 100\% = \quad\quad\%$$
+
+\vspace{0.5cm}
+
+# Guia para Feature Engineering do Detector de Nível
+
+A leitura atenta dessas amostras revela diferenças estilísticas e estruturais fundamentais entre os quatro níveis. Abaixo estão recomendações práticas de variáveis a serem extraídas na etapa de modelagem:
+
+### 1. Métricas de Superfície e Extensão
+* **Comprimento Médio da Sentença (ASL - *Average Sentence Length*)**: Textos do Fundamental I tendem a usar períodos curtos e coordenação, enquanto Superior e Médio utilizam períodos longos e estruturas subordinadas.
+* **Comprimento Médio da Palavra (AWL - *Average Word Length*)**: Quantidade média de letras ou sílabas por vocábulo. Palavras polissílabas são muito mais frequentes no Ensino Médio e Superior.
+* **Proporção de Palavras Complexas**: Porcentagem de palavras com 3 ou mais sílabas (ou mais de 7 letras).
+
+### 2. Riqueza e Diversidade Lexical
+* **Type-Token Ratio (TTR)**: Proporção de palavras únicas em relação ao total de palavras.
+* **Frequência de Vocabulário Cotidiano vs. Vocabulário Raro**: Cruzamento das palavras do texto com listas de frequência de palavras da língua portuguesa (ex.: corpus NILC).
+* **Densidade Lexical**: Proporção de palavras de conteúdo (*content words*: substantivos, verbos plenos, adjetivos) sobre palavras gramaticais (*function words*: preposições, conjunções, artigos).
+
+### 3. Características Morfossintáticas (POS-Tagging)
+* **Densidade de Conjunções Subordinativas**: Indicador direto de complexidade de raciocínio lógico e argumentativo.
+* **Uso de Pronomes e Verbos de 1ª e 2ª Pessoa**: No Fundamental I, há muita interlocução direta com o leitor (*"você"*, *"a gente"*, *"vamos ver"*). No Superior, predomina a impessoalidade (3ª pessoa e voz passiva).
+* **Proporção de Substantivos Abstratos e Termos Técnicos**: Alta frequência de sufixos de nominalização (*-ção*, *-dade*, *-ismo*, *-mento*) no Ensino Superior e Médio.
+
+### 4. Fórmulas Clássicas de Legibilidade
+* **Flesch Reading Ease (Adaptado para Português)**: $248.835 - (1.015 \times \text{ASL}) - (84.6 \times \text{ASW})$.
+* **Índice Gulpease**: Métrica calibrada para línguas latinas baseada no tamanho das palavras e das sentenças.

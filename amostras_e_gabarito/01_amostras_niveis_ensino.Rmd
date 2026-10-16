@@ -1,0 +1,163 @@
+---
+title: "Experimento de Leitura: Amostras de Níveis de Ensino"
+subtitle: "Calibração Humana e Teste Cego para Engenharia de Atributos"
+author: "Projeto ALFA-Gen"
+date: "`r format(Sys.Date(), '%d/%m/%Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_sections: false
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Carregar dados processados ou preparar caso ainda não existam
+caminho_dados <- if (file.exists("dados/amostras_experimento.rds")) {
+  "dados/amostras_experimento.rds"
+} else if (file.exists("../dados/amostras_experimento.rds")) {
+  "../dados/amostras_experimento.rds"
+} else {
+  "dados/amostras_experimento.rds"
+}
+dados_exp <- readRDS(caminho_dados)
+```
+
+\newpage
+
+# Apresentação do Experimento
+
+Este documento foi elaborado para apoiar o processo de **Engenharia de Atributos (*Feature Engineering*)** do modelo classificador de níveis de ensino do projeto **ALFA-Gen**.
+
+O objetivo deste experimento é que você atue como o **"modelo de *machine learning* inicial"**:
+
+1. **Fase de Treinamento e Calibração**: Leia atentamente as 10 amostras textuais de cada um dos quatro níveis educacionais (Fundamental I, Fundamental II, Ensino Médio e Ensino Superior). Observe atentamente os padrões de vocabulário, estrutura sintática, extensão das frases, complexidade temática, marcas de interlocução e nível de formalidade.
+2. **Fase de Teste Cego**: No final do documento, você encontrará 10 frases com nível desconhecido identificadas unicamente por um código neutro (`ID_01` a `ID_10`), sem qualquer pista sobre a sua origem. Anote sua previsão de nível para cada uma delas.
+3. **Avaliação**: Após preencher suas classificações, consulte o documento complementar **`02_gabarito_respostas.pdf`** para verificar seu percentual de acertos e analisar os erros cometidos.
+
+\vspace{0.5cm}
+
+# Distribuição do Dataset Completo
+
+Abaixo está a distribuição de frequência dos textos contidos no conjunto de dados (`dados/`):
+
+```{r tabela-frequencia}
+tab_freq <- dados_exp$frequencias
+knitr::kable(
+  tab_freq,
+  format = "latex",
+  booktabs = TRUE,
+  align = c("l", "c", "c"),
+  caption = "Frequência Absoluta e Relativa por Nível de Ensino"
+)
+```
+
+> **Nota:** Os dados foram extraídos dos textos do arquivo zip original, cobrindo um total de `r tab_freq[tab_freq$Nivel == 'Total', 'Frequência Absoluta']` arquivos textuais válidos.
+
+\newpage
+
+## 10 frases fundamental I
+
+Nesta seção estão 10 amostras selecionadas aleatoriamente do acervo de **Ensino Fundamental I**. Observe a clareza do vocabulário, a aproximação com o leitor infantil/juvenil e construções sintáticas mais diretas.
+
+```{r frases-fundamental-1, results='asis'}
+df_f1 <- dados_exp$amostras_conhecidas[dados_exp$amostras_conhecidas$nivel_completo == "Ensino Fundamental I", ]
+
+for (i in 1:nrow(df_f1)) {
+  cat(paste0("### Frase ", sprintf("%02d", i), " (Fundamental I)\n\n"))
+  txt <- trimws(df_f1$texto[i])
+  # Formatar em bloco de citação para leitura agradável
+  txt_formatado <- paste0("> ", gsub("\n", "\n> \n> ", txt))
+  cat(txt_formatado, "\n\n")
+  cat("\\vspace{0.3cm}\n\n---\n\n")
+}
+```
+
+\newpage
+
+## 10 frases fundamental II
+
+Nesta seção estão 10 amostras selecionadas aleatoriamente do acervo de **Ensino Fundamental II**. Observe a transição para textos informativos mais estruturados, introdução de vocabulário temático e maior subordinação oracional.
+
+```{r frases-fundamental-2, results='asis'}
+df_f2 <- dados_exp$amostras_conhecidas[dados_exp$amostras_conhecidas$nivel_completo == "Ensino Fundamental II", ]
+
+for (i in 1:nrow(df_f2)) {
+  cat(paste0("### Frase ", sprintf("%02d", i), " (Fundamental II)\n\n"))
+  txt <- trimws(df_f2$texto[i])
+  txt_formatado <- paste0("> ", gsub("\n", "\n> \n> ", txt))
+  cat(txt_formatado, "\n\n")
+  cat("\\vspace{0.3cm}\n\n---\n\n")
+}
+```
+
+\newpage
+
+## 10 frases ensino médio
+
+Nesta seção estão 10 amostras selecionadas aleatoriamente do acervo de **Ensino Médio**. Observe a maior densidade conceitual, argumentação mais abstrata e emprego de períodos compostos mais extensos.
+
+```{r frases-ensino-medio, results='asis'}
+df_em <- dados_exp$amostras_conhecidas[dados_exp$amostras_conhecidas$nivel_completo == "Ensino Médio", ]
+
+for (i in 1:nrow(df_em)) {
+  cat(paste0("### Frase ", sprintf("%02d", i), " (Ensino Médio)\n\n"))
+  txt <- trimws(df_em$texto[i])
+  txt_formatado <- paste0("> ", gsub("\n", "\n> \n> ", txt))
+  cat(txt_formatado, "\n\n")
+  cat("\\vspace{0.3cm}\n\n---\n\n")
+}
+```
+
+\newpage
+
+## 10 frases ensino superior
+
+Nesta seção estão 10 amostras selecionadas aleatoriamente do acervo de **Ensino Superior**. Observe o vocabulário técnico/especializado, construções impessoais, densidade informacional e temas acadêmicos específicos.
+
+```{r frases-ensino-superior, results='asis'}
+df_es <- dados_exp$amostras_conhecidas[dados_exp$amostras_conhecidas$nivel_completo == "Ensino Superior", ]
+
+for (i in 1:nrow(df_es)) {
+  cat(paste0("### Frase ", sprintf("%02d", i), " (Ensino Superior)\n\n"))
+  txt <- trimws(df_es$texto[i])
+  txt_formatado <- paste0("> ", gsub("\n", "\n> \n> ", txt))
+  cat(txt_formatado, "\n\n")
+  cat("\\vspace{0.3cm}\n\n---\n\n")
+}
+```
+
+\newpage
+
+## 10 frases de nível desconhecido
+
+As 10 frases a seguir foram sorteadas de diferentes níveis e tiveram seus identificadores originais mascarados por códigos neutros (`ID_01` a `ID_10`).
+
+> **Instruções do Teste Cego:**
+> 
+> 1. Leia cada uma das frases abaixo.
+> 2. Classifique mentalmente ou anote no formulário qual é o nível: **Fundamental I**, **Fundamental II**, **Médio** ou **Superior**.
+> 3. Ao finalizar as 10 frases, abra o arquivo **`02_gabarito_respostas.pdf`** para conferir suas respostas!
+
+\vspace{0.5cm}
+
+```{r frases-desconhecidas, results='asis'}
+df_desc <- dados_exp$amostras_desconhecidas
+
+for (i in 1:nrow(df_desc)) {
+  cat(paste0("### [ID: ", df_desc$id_anonimo[i], "] - Frase de Nível Desconhecido\n\n"))
+  cat("**Seu palpite:** [  ] Fundamental I \\quad [  ] Fundamental II \\quad [  ] Ensino Médio \\quad [  ] Ensino Superior\n\n")
+  
+  txt <- trimws(df_desc$texto[i])
+  txt_formatado <- paste0("> ", gsub("\n", "\n> \n> ", txt))
+  cat(txt_formatado, "\n\n")
+  cat("\\vspace{0.4cm}\n\n---\n\n")
+}
+```

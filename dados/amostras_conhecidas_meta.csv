@@ -1,0 +1,41 @@
+path,id_original,nivel_completo,nivel,n_caracteres,n_palavras
+dataset_caed/1_Ensino_Fundamental_I/148_705.txt,148_705.txt,Ensino Fundamental I,Fundamental I,2070,333
+dataset_caed/1_Ensino_Fundamental_I/250_809.txt,250_809.txt,Ensino Fundamental I,Fundamental I,1922,332
+dataset_caed/1_Ensino_Fundamental_I/49_380.txt,49_380.txt,Ensino Fundamental I,Fundamental I,2410,428
+dataset_caed/1_Ensino_Fundamental_I/7_91.txt,7_91.txt,Ensino Fundamental I,Fundamental I,2020,354
+dataset_caed/1_Ensino_Fundamental_I/211_769.txt,211_769.txt,Ensino Fundamental I,Fundamental I,1744,311
+dataset_caed/1_Ensino_Fundamental_I/2_25.txt,2_25.txt,Ensino Fundamental I,Fundamental I,2977,502
+dataset_caed/1_Ensino_Fundamental_I/108_665.txt,108_665.txt,Ensino Fundamental I,Fundamental I,1668,308
+dataset_caed/1_Ensino_Fundamental_I/219_777.txt,219_777.txt,Ensino Fundamental I,Fundamental I,1891,332
+dataset_caed/1_Ensino_Fundamental_I/89_646.txt,89_646.txt,Ensino Fundamental I,Fundamental I,1810,316
+dataset_caed/1_Ensino_Fundamental_I/93_650.txt,93_650.txt,Ensino Fundamental I,Fundamental I,1863,325
+dataset_caed/2_Ensino_Fundamental_II/205_5036.txt,205_5036.txt,Ensino Fundamental II,Fundamental II,1931,316
+dataset_caed/2_Ensino_Fundamental_II/244_5075.txt,244_5075.txt,Ensino Fundamental II,Fundamental II,2125,318
+dataset_caed/2_Ensino_Fundamental_II/189_5020.txt,189_5020.txt,Ensino Fundamental II,Fundamental II,1805,306
+dataset_caed/2_Ensino_Fundamental_II/191_5022.txt,191_5022.txt,Ensino Fundamental II,Fundamental II,1879,302
+dataset_caed/2_Ensino_Fundamental_II/232_5063.txt,232_5063.txt,Ensino Fundamental II,Fundamental II,1780,306
+dataset_caed/2_Ensino_Fundamental_II/208_5039.txt,208_5039.txt,Ensino Fundamental II,Fundamental II,3224,471
+dataset_caed/2_Ensino_Fundamental_II/237_5068.txt,237_5068.txt,Ensino Fundamental II,Fundamental II,2072,335
+dataset_caed/2_Ensino_Fundamental_II/116_2847.txt,116_2847.txt,Ensino Fundamental II,Fundamental II,2205,339
+dataset_caed/2_Ensino_Fundamental_II/241_5072.txt,241_5072.txt,Ensino Fundamental II,Fundamental II,2184,369
+dataset_caed/2_Ensino_Fundamental_II/307_5138.txt,307_5138.txt,Ensino Fundamental II,Fundamental II,2138,339
+dataset_caed/3_Ensino_Medio/537_1898.txt,537_1898.txt,Ensino Médio,Médio,2267,368
+dataset_caed/3_Ensino_Medio/342_1703.txt,342_1703.txt,Ensino Médio,Médio,3266,540
+dataset_caed/3_Ensino_Medio/324_1685.txt,324_1685.txt,Ensino Médio,Médio,1860,330
+dataset_caed/3_Ensino_Medio/52_446.txt,52_446.txt,Ensino Médio,Médio,3124,557
+dataset_caed/3_Ensino_Medio/378_1739.txt,378_1739.txt,Ensino Médio,Médio,2195,348
+dataset_caed/3_Ensino_Medio/616_1977.txt,616_1977.txt,Ensino Médio,Médio,2198,337
+dataset_caed/3_Ensino_Medio/604_1965.txt,604_1965.txt,Ensino Médio,Médio,2339,350
+dataset_caed/3_Ensino_Medio/175_1536.txt,175_1536.txt,Ensino Médio,Médio,2773,438
+dataset_caed/3_Ensino_Medio/141_1007.txt,141_1007.txt,Ensino Médio,Médio,2889,506
+dataset_caed/3_Ensino_Medio/327_1688.txt,327_1688.txt,Ensino Médio,Médio,3471,595
+dataset_caed/4_Ensino_Superior/802_1834.txt,802_1834.txt,Ensino Superior,Superior,2005,326
+dataset_caed/4_Ensino_Superior/789_1821.txt,789_1821.txt,Ensino Superior,Superior,1891,322
+dataset_caed/4_Ensino_Superior/283_1312.txt,283_1312.txt,Ensino Superior,Superior,3701,553
+dataset_caed/4_Ensino_Superior/815_1847.txt,815_1847.txt,Ensino Superior,Superior,2151,330
+dataset_caed/4_Ensino_Superior/209_1233.txt,209_1233.txt,Ensino Superior,Superior,2249,370
+dataset_caed/4_Ensino_Superior/217_1246.txt,217_1246.txt,Ensino Superior,Superior,3720,567
+dataset_caed/4_Ensino_Superior/430_1462.txt,430_1462.txt,Ensino Superior,Superior,2153,331
+dataset_caed/4_Ensino_Superior/602_1634.txt,602_1634.txt,Ensino Superior,Superior,2807,438
+dataset_caed/4_Ensino_Superior/478_1510.txt,478_1510.txt,Ensino Superior,Superior,3553,536
+dataset_caed/4_Ensino_Superior/18_143.txt,18_143.txt,Ensino Superior,Superior,2592,452

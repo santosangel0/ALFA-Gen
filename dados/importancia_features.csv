@@ -1,0 +1,136 @@
+Modelo,Tipo Métrica,Feature,Valor,Importância Relativa (%)
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),prop_cv,-0.1270140808387902,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),pont_exp_prop,0.7226936465417485,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),formula_prop,-1.5929391385545708,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),asl,-1.7011559293278997,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),sconj_densidade,0.3595638821281764,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),razao_nominal,-0.2877519048390099,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),cconj_densidade,0.8360884392033694,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),prop_polissilabos,-0.9696207488542475,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),virgulas_por_sentenca,-0.22933018504236738,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),metadiscurso_prop,-0.20188510286120634,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),citacao_academica_prop,-0.2392631572729172,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),nominalizacao_prop,-0.9174155852811864,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),conectivos_argumentativos_prop,-0.1607178499115872,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),pont_estruturante_prop,-0.8648985503934283,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental I),pessoalidade_prop,-0.05952523343470649,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),prop_cv,-0.3139421932571035,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),pont_exp_prop,0.20917162664040392,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),formula_prop,-2.35836260245159,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),asl,-0.5728261771303923,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),sconj_densidade,0.3733909850376746,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),razao_nominal,0.10024092117145822,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),cconj_densidade,0.07525934472899917,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),prop_polissilabos,0.45115280780213224,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),virgulas_por_sentenca,0.4552786434599302,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),metadiscurso_prop,-0.10504206359707408,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),citacao_academica_prop,-1.4889148159055905,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),nominalizacao_prop,-0.050169578163860834,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),conectivos_argumentativos_prop,0.3975704341268027,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),pont_estruturante_prop,-0.6117285792409674,
+Regressão Logística,Coeficiente Padronizado (Ensino Fundamental II),pessoalidade_prop,0.3247805959066105,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),prop_cv,0.2540385587801984,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),pont_exp_prop,-0.5433097474077929,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),formula_prop,1.621108874317563,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),asl,0.9190193133749123,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),sconj_densidade,-0.5427882050597256,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),razao_nominal,0.0756482174977128,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),cconj_densidade,-0.45274842816966643,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),prop_polissilabos,0.4314610136762678,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),virgulas_por_sentenca,0.23745483852625254,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),metadiscurso_prop,-0.01438749522423748,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),citacao_academica_prop,0.09544817066696028,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),nominalizacao_prop,-0.04204989945449215,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),conectivos_argumentativos_prop,-0.22133241760101416,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),pont_estruturante_prop,0.9744719852621895,
+Regressão Logística,Coeficiente Padronizado (Ensino Médio),pessoalidade_prop,-0.1805413743695566,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),prop_cv,0.18691771531569693,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),pont_exp_prop,-0.3885555257743604,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),formula_prop,2.330192866688594,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),asl,1.3549627930833823,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),sconj_densidade,-0.1901666621061245,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),razao_nominal,0.11186276616983738,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),cconj_densidade,-0.4585993557627025,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),prop_polissilabos,0.087006927375845,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),virgulas_por_sentenca,-0.46340329694381494,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),metadiscurso_prop,0.3213146616825178,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),citacao_academica_prop,1.6327298025115429,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),nominalizacao_prop,1.0096350628995392,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),conectivos_argumentativos_prop,-0.01552016661420194,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),pont_estruturante_prop,0.5021551443722069,
+Regressão Logística,Coeficiente Padronizado (Ensino Superior),pessoalidade_prop,-0.08471398810234519,
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),prop_cv,0.22047813704794722,2.680484219147274
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),pont_exp_prop,0.4659326365910765,5.664620974625068
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),formula_prop,1.9756508705030795,24.019166035389837
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),asl,1.1369910532291467,13.823078407223605
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),sconj_densidade,0.3664774335829252,4.455484750304272
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),razao_nominal,0.14387595241950457,1.749185770248945
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),cconj_densidade,0.45567389196618435,5.539899297258458
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),prop_polissilabos,0.4848103744271231,5.8941288933704
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),virgulas_por_sentenca,0.3463667409930912,4.210987065205233
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),metadiscurso_prop,0.16065733084125894,1.9532069971938595
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),citacao_academica_prop,0.8640889865892527,10.50524520709169
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),nominalizacao_prop,0.5048175314497696,6.137367834824005
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),conectivos_argumentativos_prop,0.19878521706340152,2.416750451870594
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),pont_estruturante_prop,0.738313564817198,8.976118384220959
+Regressão Logística,Magnitude Média Coeficientes (|Beta|),pessoalidade_prop,0.1623902979533047,1.9742757120257963
+Random Forest,MDI (Gini Importance),prop_cv,0.04221821839268851,4.221821839268851
+Random Forest,Permutation Importance (Teste),prop_cv,0.0043269230769230616,
+Random Forest,MDI (Gini Importance),pont_exp_prop,0.07124180894515413,7.124180894515414
+Random Forest,Permutation Importance (Teste),pont_exp_prop,0.006249999999999978,
+Random Forest,MDI (Gini Importance),formula_prop,0.09257556005583802,9.257556005583803
+Random Forest,Permutation Importance (Teste),formula_prop,0.04543269230769229,
+Random Forest,MDI (Gini Importance),asl,0.10366117185212748,10.366117185212751
+Random Forest,Permutation Importance (Teste),asl,0.01826923076923076,
+Random Forest,MDI (Gini Importance),sconj_densidade,0.055761283115419676,5.576128311541969
+Random Forest,Permutation Importance (Teste),sconj_densidade,0.00048076923076922906,
+Random Forest,MDI (Gini Importance),razao_nominal,0.04223043212881971,4.223043212881972
+Random Forest,Permutation Importance (Teste),razao_nominal,-0.0016826923076923017,
+Random Forest,MDI (Gini Importance),cconj_densidade,0.03690179690852919,3.69017969085292
+Random Forest,Permutation Importance (Teste),cconj_densidade,-0.0014423076923076872,
+Random Forest,MDI (Gini Importance),prop_polissilabos,0.12099544145038654,12.099544145038656
+Random Forest,Permutation Importance (Teste),prop_polissilabos,0.008173076923076894,
+Random Forest,MDI (Gini Importance),virgulas_por_sentenca,0.05645144822779206,5.645144822779207
+Random Forest,Permutation Importance (Teste),virgulas_por_sentenca,0.014423076923076905,
+Random Forest,MDI (Gini Importance),metadiscurso_prop,0.03708596937156286,3.708596937156287
+Random Forest,Permutation Importance (Teste),metadiscurso_prop,0.0007211538461538436,
+Random Forest,MDI (Gini Importance),citacao_academica_prop,0.061648282987788905,6.164828298778892
+Random Forest,Permutation Importance (Teste),citacao_academica_prop,0.04302884615384611,
+Random Forest,MDI (Gini Importance),nominalizacao_prop,0.13671861244998246,13.671861244998249
+Random Forest,Permutation Importance (Teste),nominalizacao_prop,0.04254807692307692,
+Random Forest,MDI (Gini Importance),conectivos_argumentativos_prop,0.03708831696793009,3.70883169679301
+Random Forest,Permutation Importance (Teste),conectivos_argumentativos_prop,0.006971153846153821,
+Random Forest,MDI (Gini Importance),pont_estruturante_prop,0.0752646823628033,7.526468236280332
+Random Forest,Permutation Importance (Teste),pont_estruturante_prop,0.02764423076923077,
+Random Forest,MDI (Gini Importance),pessoalidade_prop,0.03015697478317703,3.0156974783177035
+Random Forest,Permutation Importance (Teste),pessoalidade_prop,0.0,
+LightGBM,Ganho (Gain Importance),prop_cv,1944.4226415825435,3.736352801669643
+LightGBM,Divisões (Split Frequency),prop_cv,876.0,6.660077548848172
+LightGBM,Ganho (Gain Importance),pont_exp_prop,2287.9856589315577,4.396534706040649
+LightGBM,Divisões (Split Frequency),pont_exp_prop,552.0,4.196761195164601
+LightGBM,Ganho (Gain Importance),formula_prop,4592.407757079431,8.824653253167087
+LightGBM,Divisões (Split Frequency),formula_prop,587.0,4.462860183988444
+LightGBM,Ganho (Gain Importance),asl,4737.908116297358,9.104243020937625
+LightGBM,Divisões (Split Frequency),asl,1453.0,11.046909450315518
+LightGBM,Ganho (Gain Importance),sconj_densidade,3256.6012984656627,6.2578017377641375
+LightGBM,Divisões (Split Frequency),sconj_densidade,880.0,6.690488861856611
+LightGBM,Ganho (Gain Importance),razao_nominal,1399.3228015747009,2.6889028950251994
+LightGBM,Divisões (Split Frequency),razao_nominal,746.0,5.6717098760738995
+LightGBM,Ganho (Gain Importance),cconj_densidade,2356.3364527471404,4.527875842739892
+LightGBM,Divisões (Split Frequency),cconj_densidade,921.0,7.0022048201931115
+LightGBM,Ganho (Gain Importance),prop_polissilabos,7852.800285389323,15.089740121204512
+LightGBM,Divisões (Split Frequency),prop_polissilabos,946.0,7.192275526495856
+LightGBM,Ganho (Gain Importance),virgulas_por_sentenca,2900.4008707934518,5.573336109033445
+LightGBM,Divisões (Split Frequency),virgulas_por_sentenca,993.0,7.549608454345017
+LightGBM,Ganho (Gain Importance),metadiscurso_prop,1932.6232807815222,3.7136794518309855
+LightGBM,Divisões (Split Frequency),metadiscurso_prop,830.0,6.310347449251122
+LightGBM,Ganho (Gain Importance),citacao_academica_prop,2350.255578780756,4.516190990900063
+LightGBM,Divisões (Split Frequency),citacao_academica_prop,389.0,2.9575001900707063
+LightGBM,Ganho (Gain Importance),nominalizacao_prop,8357.292561887334,16.05915957271835
+LightGBM,Divisões (Split Frequency),nominalizacao_prop,1394.0,10.59834258344104
+LightGBM,Ganho (Gain Importance),conectivos_argumentativos_prop,1887.0627177981723,3.6261314396303375
+LightGBM,Divisões (Split Frequency),conectivos_argumentativos_prop,491.0,3.7329886717859044
+LightGBM,Ganho (Gain Importance),pont_estruturante_prop,4143.649959955646,7.962331751299629
+LightGBM,Divisões (Split Frequency),pont_estruturante_prop,1368.0,10.400669048886185
+LightGBM,Ganho (Gain Importance),pessoalidade_prop,2041.5895807489069,3.9230663060384376
+LightGBM,Divisões (Split Frequency),pessoalidade_prop,727.0,5.527256139283813

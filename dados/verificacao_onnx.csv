@@ -1,0 +1,4 @@
+Modelo,Arquivo ONNX,Tamanho (KB),Opset ONNX,Acurácia de Paridade (%),Diferença Máxima Probabilidades,Status Verificação
+Regressão Logística,modelos/regressao_logistica.onnx,1.1,15,100.0,2.8694195230993813e-07,Aprovado (100% Idêntico)
+Random Forest,modelos/random_forest.onnx,2656.0,15,100.0,6.400496473935036e-07,Aprovado (100% Idêntico)
+LightGBM,modelos/lightgbm.onnx,998.0,15,100.0,2.5411535775621275e-07,Aprovado (100% Idêntico)
