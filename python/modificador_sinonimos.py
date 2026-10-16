@@ -225,8 +225,13 @@ SINONIMOS_CURADOS_PT = {
 
 class ModificadorSinonimos:
     def __init__(self):
-        # Carregar spaCy
-        self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+        # Carregar spaCy com auto-download resiliente para deploy
+        try:
+            self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+        except OSError:
+            import spacy.cli
+            spacy.cli.download("pt_core_news_sm")
+            self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
 
     @staticmethod
     def ajustar_inflexao(palavra_orig: str, sinonimo: str, pos: str) -> str:
@@ -458,12 +463,23 @@ class ModificadorSinonimos:
                     if sin.lower() != pal_lower and sin.lower() != lem_lower:
                         candidatos.add(sin.lower())
 
-        # 2. WordNet em Português (OMW)
+        # 2. WordNet em Português (OMW com fallback seguro)
         if pos in SPACY_TO_WN:
             wn_pos = SPACY_TO_WN[pos]
-            synsets = wn.synsets(lem_lower, pos=wn_pos, lang="por")
-            if not synsets:
-                synsets = wn.synsets(pal_lower, pos=wn_pos, lang="por")
+            try:
+                synsets = wn.synsets(lem_lower, pos=wn_pos, lang="por")
+                if not synsets:
+                    synsets = wn.synsets(pal_lower, pos=wn_pos, lang="por")
+            except Exception:
+                try:
+                    import nltk
+                    nltk.download("wordnet", quiet=True)
+                    nltk.download("omw-1.4", quiet=True)
+                    synsets = wn.synsets(lem_lower, pos=wn_pos, lang="por")
+                    if not synsets:
+                        synsets = wn.synsets(pal_lower, pos=wn_pos, lang="por")
+                except Exception:
+                    synsets = []
 
             for s in synsets:
                 for l in s.lemmas("por"):

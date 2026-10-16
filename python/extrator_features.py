@@ -115,8 +115,13 @@ ROTULOS_FEATURES = {
 
 class ExtratorFeatures:
     def __init__(self):
-        # Carregar spaCy com componentes necessários
-        self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+        # Carregar spaCy com componentes necessários e auto-download resiliente
+        try:
+            self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+        except OSError:
+            import spacy.cli
+            spacy.cli.download("pt_core_news_sm")
+            self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
         self.dic_pyphen = pyphen.Pyphen(lang="pt_BR")
 
     @staticmethod
