@@ -1,0 +1,22 @@
+---
+title: "Trajetória Metodológica e Construção do Projeto ALFA-Gen"
+output:
+  pdf_document:
+    latex_engine: xelatex
+geometry: margin=1.8cm
+fontsize: 11pt
+---
+
+O projeto **ALFA-Gen** teve início com uma etapa exploratória de leitura humana. Para calibrar a percepção sobre as gradações de complexidade textual, selecionei uma amostra aleatória sem repetição de 10 textos de cada um dos quatro níveis de ensino (Ensino Fundamental I, Ensino Fundamental II, Ensino Médio e Ensino Superior). 
+
+Após a leitura dessa base de referência, submeti-me a um teste cego: tentei classificar 10 novos textos cujo nível correto era desconhecido para mim. O resultado revelou a complexidade do problema: acertei apenas 4 dos 10 textos (40% de acurácia). Curiosamente, confundi textos do Ensino Superior com textos do Ensino Fundamental I — um efeito contraintuitivo decorrente de enunciados acadêmicos curtos que apresentam estruturas simples na superfície, desprovidas de contexto prévio.
+
+Essa frustração inicial tornou-se o catalisador para a engenharia de atributos. A partir das discrepâncias observadas, formulei as primeiras hipóteses de *features*. A primeira delas foi a **Canonicidade Silábica** (`prop_cv`), já sugerida pelo CAEd para capturar a maturação fonológica primária. Todas as bibliotecas adotadas para a extração no ecossistema Python seguiram estritamente as recomendações do próprio CAEd (spaCy, Pyphen e NLTK).
+
+Para assegurar reprodutibilidade e sustentabilidade técnica, utilizei o gerenciador moderno de pacotes **`uv`** e estruturei o código de forma estritamente modularizada. A escolha da linguagem **R** para a análise exploratória de dados, testes de hipóteses e elaboração dos gráficos deveu-se à minha maior familiaridade e domínio com a ferramenta para finalidades analítico-estatísticas.
+
+Todo o processo de codificação e redação dos relatórios foi conduzido em parceria com o modelo **Gemini 3.8 flash . high**, via **Antigravity CLI**. Aproveitando a velocidade do modelo, gerei um relatório monográfico para cada uma das 15 features e, posteriormente, um relatório multivariado consolidando o espaço vetorial.
+
+Em seguida, foi elaborado um **último relatório dedicado aos três modelos de classificação** preditiva, seguindo o padrão rigoroso da ciência de dados (validação cruzada 5-fold e *holdout test* anti-vazamento). A escolha dos três algoritmos atendeu a papéis metodológicos complementares: a **Regressão Logística** atuou como o *baseline* linear clássico e interpretável; o **Random Forest** (baseado em *bagging*) forneceu robustez contra sobreajuste e capturou interações não-lineares; e o **LightGBM (Gradient Boosting)** foi escalado como o modelo de alta performance focado na minimização sequencial de resíduos — sagrando-se o campeão em acurácia (72,8%) e ROC-AUC (0,922). Todos os três modelos foram serializados em formato **ONNX** para produção.
+
+Por fim, para entregar valor direto aos professores, foi desenvolvida uma interface web simples e interativa utilizando **Streamlit**. O **gerador de texto similar** (o módulo *Gen*, integrando substituição por sinônimos mais frequentes, preservação de fórmulas e concordância nominal automática de artigos) foi inteiramente codificado pelo Gemini; meu papel consistiu na auditoria minuciosa da qualidade dos textos gerados até atingir o acabamento desejado.

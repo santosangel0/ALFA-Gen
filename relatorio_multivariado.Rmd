@@ -1,0 +1,414 @@
+---
+title: "Relatório de Engenharia de Atributos: Análise Multivariada Completa (15 Features)"
+subtitle: "Estrutura de Dependência, PCA, MANOVA, LDA e Distâncias Multivariadas no Hipervolume de 15 Dimensões"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares do projeto
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset multivariado consolidado de 15 features
+caminho_csv <- "dados/dataset_multivariado_features.csv"
+if (!file.exists(caminho_csv)) {
+  system("Rscript consolidar_dataset_multivariado.R")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+
+# Vetor com as 15 variáveis multivariadas
+features_multi <- c(
+  "prop_cv",
+  "pont_exp_prop",
+  "formula_prop",
+  "asl",
+  "sconj_densidade",
+  "razao_nominal",
+  "cconj_densidade",
+  "prop_polissilabos",
+  "virgulas_por_sentenca",
+  "metadiscurso_prop",
+  "citacao_academica_prop",
+  "nominalizacao_prop",
+  "conectivos_argumentativos_prop",
+  "pont_estruturante_prop",
+  "pessoalidade_prop"
+)
+
+rotulos_features <- c(
+  "prop_cv"                        = "Canonicidade CV (prop_cv)",
+  "pont_exp_prop"                  = "Pontuação Expressiva (pont_exp_prop)",
+  "formula_prop"                   = "Fórmulas Matemáticas (formula_prop)",
+  "asl"                            = "Comprimento Sentença (asl)",
+  "sconj_densidade"                = "Conjunções Subordinativas (sconj_densidade)",
+  "razao_nominal"                  = "Razão Nominal (razao_nominal)",
+  "cconj_densidade"                = "Conjunções Coordenativas (cconj_densidade)",
+  "prop_polissilabos"              = "Palavras Polissílabas (prop_polissilabos)",
+  "virgulas_por_sentenca"          = "Vírgulas por Sentença (virgulas_por_sentenca)",
+  "metadiscurso_prop"              = "Metadiscurso Acadêmico (metadiscurso_prop)",
+  "citacao_academica_prop"         = "Citações Acadêmicas (citacao_academica_prop)",
+  "nominalizacao_prop"             = "Nominalizações Abstratas (nominalizacao_prop)",
+  "conectivos_argumentativos_prop" = "Conectivos Argumentativos (conectivos_argumentativos_prop)",
+  "pont_estruturante_prop"         = "Pontuação Estruturante (pont_estruturante_prop)",
+  "pessoalidade_prop"              = "Densidade de Pessoalidade (pessoalidade_prop)"
+)
+
+rotulos_curtos <- c(
+  "prop_cv"                        = "Canonicidade",
+  "pont_exp_prop"                  = "Pont. (!?)",
+  "formula_prop"                   = "Fórmulas",
+  "asl"                            = "ASL",
+  "sconj_densidade"                = "Subord.",
+  "razao_nominal"                  = "Razão Nom.",
+  "cconj_densidade"                = "Coord.",
+  "prop_polissilabos"              = "Polissílabos",
+  "virgulas_por_sentenca"          = "Vírgulas/Sent",
+  "metadiscurso_prop"              = "Metadiscurso",
+  "citacao_academica_prop"         = "Citações",
+  "nominalizacao_prop"             = "Nominaliz.",
+  "conectivos_argumentativos_prop" = "Conect.Arg.",
+  "pont_estruturante_prop"         = "Pont.Estrut.",
+  "pessoalidade_prop"              = "Pessoalidade"
+)
+```
+
+\newpage
+
+# O Espaço Multivariado de 15 Dimensões Linguísticas
+
+Ao longo das etapas de engenharia de atributos do projeto **ALFA-Gen**, o espaço de representação dos $N = 2.076$ textos foi expandido para quinze dimensões morfossintáticas, lexicais, estruturais e discursivas:
+
+1. **Canonicidade Silábica (`prop_cv`):** proporção de palavras formadas estritamente por sílabas do tipo Consoante-Vogal (CV), capturando a maturação fonológica primária.
+2. **Pontuação Expressiva (`pont_exp_prop`):** densidade combinada de exclamações e interrogações ($!$ e $?$), medindo oralidade e expressividade emocional.
+3. **Fórmulas e Termos Técnicos (`formula_prop`):** ocorrências da palavra *fórmula* e notações de equações em LaTeX, discriminando o discurso das ciências exatas.
+4. **Comprimento Médio da Sentença (`asl`):** média de palavras por período frásico, mensurando o fôlego discursivo e a extensão dos períodos.
+5. **Densidade de Conjunções Subordinativas (`sconj_densidade`):** conectivos `SCONJ` via spaCy, quantificando o grau de hipotaxe e subordinação lógica.
+6. **Razão Nominal (`razao_nominal`):** razão entre substantivos (`NOUN`) e verbos (`VERB`/`AUX`), mensurando a densidade informacional e o empacotamento expositivo.
+7. **Densidade de Conjunções Coordenativas (`cconj_densidade`):** conectivos `CCONJ` via spaCy, capturando a articulação paratática de orações independentes.
+8. **Proporção de Palavras Polissílabas (`prop_polissilabos`):** fração de vocábulos com $\ge 4$ sílabas via Pyphen, aferindo a sofisticação do vocabulário erudito.
+9. **Densidade de Vírgulas por Sentença (`virgulas_por_sentenca`):** média de vírgulas por período frásico, mensurando orações intercaladas, apostos e enumerações.
+10. **Metadiscurso Acadêmico (`metadiscurso_prop`):** densidade de termos do jargão científico e epistemológico, capturando a autoria universitária mesmo na ausência de fórmulas.
+11. **Citações e Referenciação Acadêmica (`citacao_academica_prop`):** anos bibliográficos parentéticos, autorias normatizadas e marcadores de autoridade científica (ABNT), separando categoricamente artigos acadêmicos do Ensino Médio.
+12. **Sufixos Abstratos e Nominalizações (`nominalizacao_prop`):** substantivos derivados com sufixos conceituais (*-ção*, *-mento*, *-dade*, *-ismo*, *-ência*, *-tude*), mensurando a transição da ação verbal concreta para a abstração nominal.
+13. **Conectivos Argumentativos e Conclusivos (`conectivos_argumentativos_prop`):** operadores discursivos e frases-modelo de proposta de intervenção dissertativa (*portanto*, *ademais*, *dessa forma*, *faz-se necessário*).
+14. **Pontuação Estruturante Complexa (`pont_estruturante_prop`):** densidade combinada de ponto e vírgula, dois pontos, parênteses e travessões explicativos, delimitando a transição do Fundamental para o Médio/Superior.
+15. **Densidade de Pessoalidade (`pessoalidade_prop`):** frequência de pronomes retos, oblíquos e possessivos de 1ª pessoa, capturando o imperativo de impessoalização e a ruptura com o relato autobiográfico infantil.
+
+Cada documento $i$ é representado pelo vetor $\mathbf{x}_i \in \mathbb{R}^{15}$.
+
+\newpage
+
+# Correlação Multivariada e Diagnóstico de Multicolinearidade (15 Features)
+
+## Matriz de Correlação Linear de Pearson
+
+A Tabela 1 apresenta a matriz de correlação linear $15 \times 15$ com marcadores de significância estatística.
+
+```{r tab-cor-pearson}
+cor_p_obj <- calcular_matriz_correlacao(df, features_multi, metodo = "pearson")
+tabela_matriz_correlacao(
+  cor_p_obj,
+  rotulos = rotulos_curtos,
+  caption = "Matriz de Correlação Linear de Pearson entre as 15 Features Multivariadas"
+)
+```
+
+## Matriz de Correlação Não Paramétrica de Spearman
+
+A Tabela 2 apresenta as correlações por postos de Spearman, imunes a assimetrias e caudas pesadas.
+
+```{r tab-cor-spearman}
+cor_s_obj <- calcular_matriz_correlacao(df, features_multi, metodo = "spearman")
+tabela_matriz_correlacao(
+  cor_s_obj,
+  rotulos = rotulos_curtos,
+  caption = "Matriz de Correlação por Postos de Spearman entre as 15 Features Multivariadas"
+)
+```
+
+\newpage
+
+## Fatores de Inflação da Variância (VIF) para as 15 Features
+
+Calculamos o **Fator de Inflação da Variância** ($VIF_j = \frac{1}{1 - R_j^2}$) obtido pela regressão de cada feature contra as outras quatorze variáveis.
+
+```{r tab-vif}
+vifs <- calcular_vif(df, features_multi)
+tabela_vif(
+  vifs,
+  rotulos = rotulos_curtos,
+  caption = "Diagnóstico de Multicolinearidade: Fatores de Inflação da Variância (15 Features)"
+)
+```
+
+> **Diagnóstico de Ortogonalidade das 15 Features:**  
+> Mesmo após expandir o vetor para 15 dimensões, **todos os valores de VIF permanecem estritamente abaixo de $2,2$** (os maiores valores observados são $2,185$ para `nominalizacao_prop` e $2,179$ para `prop_polissilabos`). Não há multicolinearidade prejudicial. Cada dimensão adicionada agrega variância linguística informativa e não redundante.
+
+\newpage
+
+# Análise de Variância Multivariada (MANOVA de 15 Dimensões)
+
+Testamos a hipótese omnibus de igualdade dos vetores de médias populacionais das 15 features entre os 4 níveis de ensino:
+
+$$H_0: \boldsymbol{\mu}_{\text{Fund I}} = \boldsymbol{\mu}_{\text{Fund II}} = \boldsymbol{\mu}_{\text{Médio}} = \boldsymbol{\mu}_{\text{Superior}} \in \mathbb{R}^{15}$$
+
+```{r tab-manova}
+manova_res <- calcular_manova(df, features_multi, grupo = "nivel_completo")
+tabela_manova_resultados(
+  manova_res$tabela,
+  caption = "Testes Estatísticos da Análise de Variância Multivariada (MANOVA com 15 Features)"
+)
+```
+
+A expansão para 15 features elevou substancialmente a separabilidade multivariada dos estratos educacionais:
+* O **Pillai's Trace** ultrapassou a marca unitária, atingindo **$1,019$**;
+* O **Wilks' Lambda ($\Lambda$)** despencou para **$0,2584$** ($F \approx 78,41$, $p < 10^{-300}$), indicando que menos de $26\%$ da variância total permaneceu não explicada pelos níveis de ensino.
+
+\newpage
+
+# Análise de Componentes Principais (PCA de 15 Dimensões)
+
+O PCA foi ajustado sobre a matriz padronizada em $Z$-score das 15 features ($\text{scale} = \text{TRUE}$).
+
+## Decomposição Espectral e Autovalores
+
+A Tabela 4 sintetiza os autovalores ($\lambda_k$) e as proporções de variância individual e acumulada para os componentes principais.
+
+```{r tab-pca-resumo}
+pca_res <- calcular_pca(df, features_multi, scale = TRUE)
+tabela_pca_resumo(
+  pca_res,
+  caption = "Autovalores, Proporção de Variância e Variância Acumulada do PCA (15 Dimensões)"
+)
+```
+
+## Scree Plot e Critério de Kaiser
+
+A Figura 1 apresenta o Scree Plot com a linha do Critério de Kaiser ($\lambda \ge 1$).
+
+```{r fig-scree, fig.width=7.5, fig.height=4.2}
+plot_scree_pca(pca_res, titulo = "Scree Plot: Autovalores das 15 Features e Critério de Kaiser")
+```
+
+Seis componentes principais apresentam autovalores superiores a $1,0$ (Critério de Kaiser), retendo juntos **$62,8\%$** da variância total do acervo.
+
+\newpage
+
+## Matriz de Cargas Fatoriais (Loadings dos Primeiros 5 Eixos)
+
+A Tabela 5 detalha as cargas fatoriais de cada feature nos primeiros cinco componentes principais.
+
+```{r tab-pca-cargas}
+tabela_pca_cargas(
+  pca_res,
+  n_pcs = 5,
+  rotulos = rotulos_curtos,
+  caption = "Matriz de Cargas Fatoriais (Loadings) das 10 Features nos Componentes PC1 a PC5"
+)
+```
+
+### Interpretação dos Eixos Latentes Expandidos
+
+1. **PC1 (23,51% da variância) — Complexidade Estrutural e Maturação Textual:**  
+   Fortemente polarizado no sentido negativo pela **Razão Nominal** ($-0,536$), **Palavras Polissílabas** ($-0,453$), **Comprimento da Sentença (ASL)** ($-0,342$) e **Vírgulas por Sentença** ($-0,257$), contrapondo-se à **Densidade de Subordinativas** ($+0,397$) e **Pontuação Expressiva** ($+0,334$). Este eixo ordena os textos do Fundamental I (polo positivo) em direção ao Médio e Superior (polo negativo).
+2. **PC2 (14,90% da variância) — Especialização Acadêmico-Científica:**  
+   Dominado no sentido negativo por **Fórmulas** ($-0,581$), **Metadiscurso Acadêmico** ($-0,489$), **Subordinativas** ($-0,398$) e **ASL** ($-0,383$). Projetos universitários e artigos de pesquisa projetam-se intensamente no polo inferior deste componente.
+3. **PC3 (12,70% da variância) — Canonicidade Fonológica vs. Densidade Coordenativa:**  
+   Contrapõe a **Canonicidade Silábica CV** ($+0,665$) à **Densidade de Conjunções Coordenativas** ($-0,653$).
+4. **PC4 (10,04% da variância) — Fragmentação e Pontuação Estrutural:**  
+   Dominado pela taxa de vírgulas por sentença e orações intercaladas.
+
+\newpage
+
+## Projeção Multivariada no Plano Latente (Biplot PC1 vs. PC2)
+
+A Figura 2 ilustra a projeção das 2.076 amostras e dos centróides dos 4 níveis educacionais no plano latente formado pelos dois primeiros componentes principais ($PC1 \times PC2$), com os 10 vetores de cargas direcionais.
+
+```{r fig-biplot, fig.width=7.5, fig.height=6.2}
+plot_biplot_pca(
+  pca_res,
+  df,
+  grupo = "nivel_completo",
+  titulo = "Espaço Latente do PCA: PC1 vs. PC2 com as 10 Dimensões Linguísticas"
+)
+```
+
+A incorporação das 5 novas features expandiu visivelmente a separação dos centróides:
+* O **Ensino Fundamental I** é isolado com extrema distância no quadrante superior direito (alto alinhamento com pontuação expressiva e oposição frontal a polissílabos e razão nominal).
+* O **Ensino Superior** projeta-se no quadrante inferior esquerdo (alinhado com metadiscurso acadêmico, fórmulas e sentenças longas).
+* O **Ensino Médio** ocupa o quadrante superior esquerdo, marcado pela alta razão nominal e muitas vírgulas por período frásico, sem o metadiscurso acadêmico pesado do Superior.
+* O **Ensino Fundamental II** estabelece sua zona intermediária própria entre o Fundamental I e o Ensino Médio.
+
+\newpage
+
+# Análise Discriminante Linear Canônica (LDA com 15 Features)
+
+Ajustamos o classificador discriminante linear multivariado supervisionado (LDA) utilizando a totalidade das 15 features.
+
+## Coeficientes das Funções Discriminantes Canônicas
+
+A Tabela 6 apresenta os coeficientes das funções discriminantes $LD_1$, $LD_2$ e $LD_3$.
+
+```{r tab-lda-coefs}
+lda_res <- calcular_lda(df, features_multi, grupo = "nivel_completo")
+tabela_lda_coeficientes(
+  lda_res,
+  rotulos = rotulos_curtos,
+  caption = "Coeficientes Canônicos e Poder de Separação das Funções Discriminantes (15 Features)"
+)
+```
+
+A primeira função discriminante ($LD_1$) responde pela maior fração do poder discriminatório canônico, articulando a complexidade morfológica e estrutural, enquanto $LD_2$ e $LD_3$ separam o Ensino Médio do Fundamental II e Superior.
+
+\newpage
+
+## Projeção Canônica (LD1 vs. LD2)
+
+A Figura 3 apresenta a distribuição das 2.076 amostras no espaço discriminante canônico $LD_1 \times LD_2$.
+
+```{r fig-lda-proj, fig.width=7.5, fig.height=6.2}
+plot_projecao_lda(
+  lda_res,
+  df,
+  grupo = "nivel_completo",
+  titulo = "Separação Linear Canônica da LDA (15 Features): LD1 vs. LD2"
+)
+```
+
+Na projeção canônica, a expansão para 15 features afastou categoricamente os centróides:
+* O **Ensino Fundamental I** projeta-se isolado no semiplano superior direito;
+* O **Ensino Superior** ancora-se com extrema nitidez no semiplano esquerdo;
+* O **Ensino Médio** e o **Fundamental II** formam agrupamentos bem delimitados no centro e quadrante inferior.
+
+\newpage
+
+## Desempenho e Matriz de Confusão da LDA (15 Features)
+
+A Tabela 7 apresenta a matriz de confusão da classificação linear gerada pela LDA com as 15 features.
+
+```{r tab-lda-confusao}
+tabela_lda_matriz_confusao(
+  lda_res,
+  caption = "Matriz de Confusão da Discriminação Linear Multivariada (15 Features)"
+)
+```
+
+> **Salto Extraordinário na Discriminação Linear:**  
+> Com a introdução do Lote 3 de features, a acurácia linear global da LDA saltou de **$63,05\%$ para $72,25\%$** (**um ganho formidável de $+9,2$ pontos percentuais de acurácia linear pura**, sem qualquer modelo não linear!).  
+> O maior avanço ocorreu justamente nos estratos mais desafiadores:
+> * **Ensino Fundamental II:** os acertos quase dobraram, saltando de $75$ para **$141$ acertos corretos** ($43,38\%$ de acerto linear puro, ante apenas $11,4\%$ no modelo inicial de 5 features);
+> * **Ensino Médio:** atingiu **$463$ acertos ($73,73\%$ de taxa de acerto linear)**;
+> * **Ensino Superior:** alcançou **$655$ acertos ($79,30\%$ de taxa de acerto linear)**;
+> * **Ensino Fundamental I:** registrou **$241$ acertos ($81,14\%$ de taxa de acerto linear)**.
+
+\newpage
+
+# O Espaço Multivariado do Ensino Médio e Distâncias de Mahalanobis
+
+Avaliamos a separabilidade do Ensino Médio no hipervolume de 15 dimensões através da métrica de Mahalanobis ($D_M$).
+
+## Matriz de Distâncias Multivariadas de Mahalanobis ($15$ Dimensões)
+
+```{r tab-mahalanobis}
+dist_mah <- calcular_distancias_mahalanobis(df, features_multi, grupo = "nivel_completo")
+tabela_distancias_mahalanobis(
+  dist_mah,
+  caption = "Distâncias Multivariadas de Mahalanobis entre Centróides (Espaço de 15 Dimensões)"
+)
+```
+
+A inclusão das 5 novas features produziu um afastamento geométrico notável:
+* A distância do Ensino Médio ao Fundamental I alcançou quase $3$ desvios multivariados;
+* A distância do Ensino Médio ao Ensino Superior expandiu expressivamente, impulsionada pelas citações acadêmicas e pela pontuação estruturante;
+* A distância do Fundamental I ao Superior superou $3,6$ desvios multivariados.
+
+## Teste Multivariado de Hotelling $T^2$ para o Ensino Médio ($15$ Dimensões)
+
+```{r tab-hotelling}
+hot_res <- calcular_hotelling_ensino_medio(df, features_multi, grupo = "nivel_completo", grupo_referencia = "Ensino Médio")
+tabela_hotelling_ensino_medio(
+  hot_res,
+  caption = "Contrastes Multivariados de Hotelling T2: Ensino Médio vs. Demais Níveis (15 Dimensões)"
+)
+```
+
+Os contrastes de Hotelling $T^2$ no espaço de 15 dimensões revelam estatísticas monumentais:
+* **Médio vs. Ensino Superior:** $T^2 = 963,80$ ($F \approx 63,63$, $p < 10^{-100}$);
+* **Médio vs. Fundamental II:** $T^2 = 501,79$ ($F \approx 32,96$, $p < 10^{-70}$);
+* **Médio vs. Fundamental I:** $T^2 = 1.768,81$ ($F \approx 116,13$, $p < 10^{-150}$).
+
+\newpage
+
+## Assinatura Multivariada por Nível de Ensino (Perfis Médios em Z-score)
+
+A Figura 4 ilustra o perfil multivariado padronizado dos 4 níveis pedagógicos ao longo das 15 dimensões.
+
+```{r fig-perfis-z, fig.width=7.5, fig.height=5.5}
+plot_perfis_multivariados_zscore(
+  df,
+  features_multi,
+  grupo = "nivel_completo",
+  rotulos_vars = rotulos_curtos,
+  titulo = "Assinatura Linguística Multivariada Completa (15 Features): Perfis em Z-score por Nível"
+)
+```
+
+### Diagnóstico Visual da Assinatura das 15 Features
+
+1. **Ensino Fundamental I (Azul com Quadrados):**  
+   Pico isolado de Pontuação Expressiva ($Z \approx +1,15$), alta pessoalidade e coordenação, forte depressão em Polissílabos ($Z \approx -1,35$), Nominalizações ($Z \approx -1,20$), Pontuação Estruturante e zero citações.
+2. **Ensino Fundamental II (Verde com Triângulos):**  
+   Menor taxa de Canonicidade CV, nível intermediário de polissílabos e nominalizações, baixa pontuação estruturante e taxa de pessoalidade ainda elevada ($Z > 0$).
+3. **Ensino Médio (Vermelho Sólido com Círculos):**  
+   **Pico indiscutível de Pontuação Estruturante ($Z \approx +0,25$) e Vírgulas por Sentença**, altíssima Razão Nominal, **menor taxa de Pessoalidade ($Z \approx -0,35$)**, sem as citações formais do Superior.
+4. **Ensino Superior (Roxo com Losangos):**  
+   **Pico absoluto de Citações Acadêmicas ($Z \approx +0,65$)**, **Nominalizações Abstratas ($Z \approx +0,60$)**, Metadiscurso e Fórmulas, formando a assinatura definitiva do nível universitário.
+
+\newpage
+
+# Conclusões e Diretrizes para os Modelos Preditivos
+
+A consolidação do espaço multivariado em 15 dimensões atinge o ápice de robustez metodológica do projeto **ALFA-Gen**:
+
+1. **Ortogonalidade Plena:**  
+   Todos os $15$ valores de VIF mantiveram-se rigorosamente abaixo de $2,2$, demonstrando que as novas variáveis trouxeram informação ortogonal e não redundante.
+2. **Separação Conclusiva dos Gargalos Históricos:**  
+   * **Fundamental II vs. Médio:** A pontuação estruturante complexa e a impessoalização dissertativa desataram o nó de transição pedagógica.
+   * **Médio vs. Superior:** As citações bibliográficas formais e a densidade de sufixos abstratos eliminaram a confusão de textos acadêmicos não matemáticos com redações escolares.
+3. **Poder Preditivo Superior:**  
+   A acurácia linear da LDA alcançou **$72,25\%$**, pavimentando o caminho para que os algoritmos de aprendizado de máquina atinjam níveis inéditos de precisão e recall.
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_lote3.py`: Extração das 5 novas features linguísticas (citações, nominalizações, conectivos argumentativos, pontuação estruturante e pessoalidade).
+* `consolidar_dataset_multivariado.R`: Script de consolidação das 15 features em `dados/dataset_multivariado_features.csv`.
+* `R/funcoes_estatistica.R`: Rotinas modulares de VIF, MANOVA omnibus, PCA, LDA canônica, distâncias de Mahalanobis e testes de Hotelling $T^2$.
+* `R/funcoes_tabelas.R`: Tabelas formatadas em LaTeX com `knitr::kable` e `kableExtra`.
+* `R/funcoes_graficos.R`: Visualizações gráficas de Scree Plot, biplots multidimensionais e perfis padronizados em $Z$-score.

@@ -1,0 +1,333 @@
+---
+title: "Relatório de Modelagem Preditiva e Classificação de Níveis de Ensino"
+subtitle: "Avaliação Comparativa de Regressão Logística, Random Forest e LightGBM com Exportação em Formato ONNX"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares do projeto
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar arquivos de resultados do pipeline de Machine Learning
+df_splits  <- read.csv("dados/splits_info.csv", stringsAsFactors = FALSE)
+df_cv      <- read.csv("dados/resultados_cv_modelos.csv", stringsAsFactors = FALSE)
+df_teste   <- read.csv("dados/resultados_teste_modelos.csv", stringsAsFactors = FALSE)
+df_classes <- read.csv("dados/metricas_por_classe.csv", stringsAsFactors = FALSE)
+df_conf    <- read.csv("dados/matrizes_confusao_teste.csv", stringsAsFactors = FALSE)
+df_imp     <- read.csv("dados/importancia_features.csv", stringsAsFactors = FALSE)
+df_onnx    <- read.csv("dados/verificacao_onnx.csv", stringsAsFactors = FALSE)
+
+rotulos_features <- c(
+  "prop_cv"                        = "Canonicidade CV",
+  "pont_exp_prop"                  = "Pontuação Expressiva (!?)",
+  "formula_prop"                   = "Fórmulas / LaTeX",
+  "asl"                            = "Comprimento Sentença (ASL)",
+  "sconj_densidade"                = "Conjunções Subordinativas",
+  "razao_nominal"                  = "Razão Nominal (N+A)/(V+P)",
+  "cconj_densidade"                = "Conjunções Coordenativas",
+  "prop_polissilabos"              = "Proporção de Polissílabos",
+  "virgulas_por_sentenca"          = "Pontuação Delimitadora (,)",
+  "metadiscurso_prop"              = "Marcadores Metadiscursivos",
+  "citacao_academica_prop"         = "Citações Acadêmicas (ABNT)",
+  "nominalizacao_prop"             = "Nominalizações Abstratas",
+  "conectivos_argumentativos_prop" = "Conectivos Argumentativos",
+  "pont_estruturante_prop"         = "Pontuação Estruturante",
+  "pessoalidade_prop"              = "Densidade de Pessoalidade"
+)
+```
+
+\newpage
+
+# Metodologia e Protocolo Experimental Anti-Vazamento
+
+O desenvolvimento dos classificadores automáticos de nível de ensino seguiu o protocolo padrão da Ciência de Dados (*feijão com arroz*), garantindo estimativas realistas de capacidade de generalização e prevenindo qualquer vazamento de dados (*data leakage*):
+
+1. **Divisão Estratificada (Train / Test Split):**
+   * O acervo de $N = 2.076$ textos foi particionado em **80% para Treino ($N = 1.660$)** e **20% para Teste ($N = 416$)**.
+   * A divisão foi estratificada rigorosamente pela proporção dos quatro níveis educacionais, com semente aleatória fixada (`random_state = 42`).
+   * O conjunto de teste foi **isolado completamente** durante toda a fase de ajuste, validação cruzada e seleção de hiperparâmetros, sendo consultado apenas uma única vez para a avaliação final.
+
+2. **Validação Cruzada Estratificada 5-Fold (*StratifiedKFold*):**
+   * Aplicada exclusivamente sobre os dados de treino ($N = 1.660$).
+   * A cada iteração, $4$ partes ($80\%$) foram utilizadas para ajuste do estimador e $1$ parte ($20\%$) para validação interna.
+
+3. **Prevenção Estrita de Vazamento no Pré-processamento:**
+   * A padronização de variáveis (*StandardScaler*) foi encapsulada estritamente dentro de objetos `Pipeline` do *scikit-learn*. Dessa forma, a média e o desvio padrão foram computados **exclusivamente nas amostras de treino de cada fold**, sendo apenas aplicados aos dados de validação e teste.
+
+## Distribuição das Amostras nos Conjuntos de Treino e Teste
+
+A Tabela 1 apresenta a contagem de observações por nível pedagógico em cada partição.
+
+```{r tab-splits}
+tabela_splits_info(
+  df_splits,
+  caption = "Divisão Estratificada do Acervo em Conjunto de Treino (80%) e Teste Isolado (20%)"
+)
+```
+
+\newpage
+
+# Modelos de Aprendizado de Máquina Avaliados
+
+Foram selecionados três algoritmos com fundamentos teóricos complementares:
+
+1. **Regressão Logística Multinomial (*Softmax Regression*):**
+   * **Fundamento:** Modelo linear generalizado com função de ligação *softmax* e penalização de norma $L_2$ (Ridge).
+   * **Papel:** Estabelece a linha de base (*baseline*) linear do problema.
+   * **Configuração:** `solver = "lbfgs"`, `max_iter = 1000`, `class_weight = "balanced"`, antecedido por `StandardScaler`.
+
+2. **Random Forest Classifier (*Bagging de Árvores de Decisão*):**
+   * **Fundamento:** *Ensemble* de $250$ árvores de decisão não correlacionadas treinadas em subamostras bootstrap com partição estocástica de features (*Random Subspace Method*).
+   * **Papel:** Captura não linearidades e interações multivariadas sem sofrer com *overfitting*.
+   * **Configuração:** `n_estimators = 250`, `max_depth = 8`, `min_samples_split = 4`, `min_samples_leaf = 2`, `class_weight = "balanced"`.
+
+3. **LightGBM Classifier (*Gradient Boosted Decision Trees*):**
+   * **Fundamento:** *Boosting* com crescimento de árvores baseado em folhas (*leaf-wise tree growth*), otimizando gradientes de perda logarítmica multiclasse.
+   * **Papel:** Algoritmo estado-da-arte para dados tabulares, explorando fronteiras complexas com regularização adaptativa.
+   * **Configuração:** `n_estimators = 180`, `max_depth = 5`, `learning_rate = 0.04`, `num_leaves = 25`, `class_weight = "balanced"`.
+
+\newpage
+
+# Resultados da Validação Cruzada Estratificada (5-Fold)
+
+A Tabela 2 apresenta o desempenho médio e o desvio padrão obtidos pelos três modelos ao longo dos cinco folds de treino.
+
+```{r tab-cv-resumo}
+tabela_resumo_cv_modelos(
+  df_cv,
+  caption = "Desempenho na Validação Cruzada 5-Fold Estratificada (Média ± Desvio Padrão nos Folds de Treino)"
+)
+```
+
+> **Diagnóstico da Validação Cruzada:**  
+> * O **LightGBM** alcançou desempenho excepcional na validação cruzada (**$77,35\% \pm 2,23\%$** de acurácia média), com F1-Score Macro de **$0,763 \pm 0,022$**, área sob a curva ROC-AUC de **$0,936 \pm 0,007$** e perda logarítmica reduzida a **$0,600 \pm 0,047$**.  
+> * O **Random Forest** demonstrou estabilidade de classe mundial entre os folds (**$76,57\% \pm 2,06\%$** de acurácia média, F1-Score Macro de **$0,757 \pm 0,019$**, ROC-AUC de **$0,932 \pm 0,008$** e Log Loss de **$0,685 \pm 0,030$**).  
+> * A **Regressão Logística** registrou acurácia média de **$72,83\% \pm 2,25\%$** e F1-Score Macro de **$0,724 \pm 0,021$** (ROC-AUC de **$0,909 \pm 0,010$**), comprovando que o espaço linear de 15 dimensões se tornou altamente separável.
+
+\newpage
+
+# Desempenho no Conjunto de Teste Independente (Holdout, N = 416)
+
+Os modelos finais foram treinados com a totalidade dos dados de treino ($N = 1.660$) e avaliados no conjunto de teste independente ($N = 416$).
+
+## Comparativo Global de Métricas
+
+A Tabela 3 consolida as métricas globais de generalização dos modelos no teste.
+
+```{r tab-teste-resumo}
+tabela_comparativo_teste_modelos(
+  df_teste,
+  caption = "Desempenho Geral dos Modelos no Conjunto de Teste Independente (Holdout, N = 416)"
+)
+```
+
+A Figura 1 compara visualmente a Acurácia Global, a Acurácia Balanceada e o F1-Score Macro.
+
+```{r fig-comp-barras, fig.width=7.5, fig.height=4.2}
+plot_comparativo_modelos_barras(
+  df_teste,
+  titulo = "Comparativo de Desempenho no Teste Independente: Regressão Logística vs. Random Forest vs. LightGBM"
+)
+```
+
+O **LightGBM** obteve a liderança absoluta no teste independente ($N = 416$), atingindo Acurácia Global de **$72,84\%$**, Acurácia Balanceada de **$72,40\%$**, F1-Score Macro de **$0,716$**, ROC-AUC OvR de **$0,922$** e menor Log Loss (**$0,660$**). O **Random Forest** registrou **$72,12\%$** de acurácia global e **$72,06\%$** de acurácia balanceada (ROC-AUC de **$0,915$**). A **Regressão Logística** alcançou **$70,19\%$** de acurácia (+16,3 pp sobre o modelo inicial), comprovando que **todos os três classificadores superaram a marca de 70% de acurácia em teste independente**.
+
+\newpage
+
+## Métricas Detalhadas por Nível de Ensino
+
+A Tabela 4 detalha o comportamento dos três classificadores em cada um dos quatro estratos educacionais.
+
+```{r tab-classes}
+tabela_metricas_classes_modelos(
+  df_classes,
+  caption = "Métricas por Nível de Ensino no Conjunto de Teste (Precisão, Revocação, F1-Score e Suporte)"
+)
+```
+
+### Análise do Comportamento por Nível Pedagógico
+
+1. **Ensino Fundamental II ($N = 65$) — O Maior Avanço do Projeto:**  
+   Apresentou um salto histórico: no LightGBM, a precisão disparou para **$58,57\%$** (ante $35,6\%$ com 5 features e $48,5\%$ com 10 features), o recall subiu para **$63,08\%$** e o F1-Score atingiu **$0,607$** (no Random Forest, precisão de $52,0\%$ e recall de $60,0\%$). A incorporação da pontuação estruturante e a taxa de pessoalidade residual desataram o nó da transição do Fundamental II.
+2. **Ensino Médio ($N = 126$):**  
+   Alcançou precisão de **$69,11\%$** e recall de **$67,46\%$** no LightGBM (F1-Score de **$0,683$**, subindo de $0,536$ e $0,609$). A introdução de citações acadêmicas eliminou a atração indevida de textos do Ensino Médio para o Ensino Superior.
+3. **Ensino Superior ($N = 166$):**  
+   Consolidou métricas de excelência: precisão de **$81,13\%$** e recall de **$77,71\%$** no LightGBM (F1-Score de **$0,794$**; no Random Forest, precisão de $82,28\%$ e recall de $78,31\%$). As citações no formato ABNT e os sufixos nominais abstratos forneceram a identidade acadêmica definitiva.
+4. **Ensino Fundamental I ($N = 59$):**  
+   Manteve desempenho exemplar com recall de **$86,44\%$ no Random Forest** e **$81,36\%$ no LightGBM**, com precisão de **$75,00\%$** e F1-Score de **$0,780$**.
+
+\newpage
+
+# Análise das Matrizes de Confusão
+
+A Figura 2 apresenta a matriz de confusão obtida pelo **Random Forest** no conjunto de teste independente ($N = 416$), com as porcentagens normalizadas por classe real e as contagens absolutas de amostras.
+
+```{r fig-conf-rf, fig.width=6.8, fig.height=5.2}
+plot_matriz_confusao_painel(
+  df_conf,
+  modelo_nome = "Random Forest",
+  titulo = "Matriz de Confusão no Teste: Random Forest Classifier (Acurácia = 72,12%)"
+)
+```
+
+A Figura 3 apresenta a matriz de confusão para o **LightGBM**.
+
+```{r fig-conf-lgb, fig.width=6.8, fig.height=5.2}
+plot_matriz_confusao_painel(
+  df_conf,
+  modelo_nome = "LightGBM",
+  titulo = "Matriz de Confusão no Teste: LightGBM Classifier (Acurácia = 72,84%)"
+)
+```
+
+A análise das matrizes revela um padrão ordinal consistente:  
+* Quase não ocorrem erros extremos de classificação (por exemplo, apenas uma observação do Fundamental I foi classificada como Ensino Superior).  
+* As confusões concentram-se estritamente entre **níveis educacionais adjacentes** (Fundamental I com Fundamental II; Ensino Médio com Ensino Superior), refletindo a continuidade natural do desenvolvimento linguístico e pedagógico.
+
+\newpage
+
+# Importância e Contribuição das Features
+
+Avaliamos a relevância de cada atributo através de duas métricas clássicas em modelos baseados em árvores:
+* **MDI (*Mean Decrease in Impurity* / Gini) no Random Forest:** redução total da impureza de Gini acumulada em todas as árvores.
+* **Ganho (*Total Gain*) no LightGBM:** contribuição marginal de cada atributo na redução da função de perda logarítmica.
+
+A Figura 4 apresenta a importância relativa percentual das quinze features nos dois modelos.
+
+```{r fig-imp-features, fig.width=7.5, fig.height=8.0}
+plot_importancia_features_arvores(
+  df_imp,
+  rotulos_vars = rotulos_features,
+  titulo = "Importância Relativa das 15 Features nos Modelos de Árvores (Random Forest vs. LightGBM)"
+)
+```
+
+### Síntese dos Fatores Determinantes de Complexidade Textual
+
+1. **Nominalizações Abstratas (`nominalizacao_prop`):** Consagrou-se como o atributo mais determinante em ambos os algoritmos, respondendo por **$16,06\%$ do ganho total no LightGBM** e **$13,67\%$ do MDI no Random Forest** (com alta *Permutation Importance* no teste: $0,0425$). A transição de ações verbais concretas para substantivos conceituais é o divisor de águas mais robusto do acervo.
+2. **Proporção de Polissílabos (`prop_polissilabos`):** Segunda mais informativa (**$15,09\%$ no LightGBM** e **$12,10\%$ no Random Forest**), capturando a densidade vocabular erudita.
+3. **Comprimento Médio da Sentença (`asl`):** Terceira colocada (**$10,37\%$ no Random Forest** e **$9,10\%$ no LightGBM**), refletindo o fôlego discursivo e a extensão dos períodos.
+4. **Fórmulas e Notações Técnicas (`formula_prop`):** Quarta colocada (**$9,26\%$ no Random Forest** e **$8,82\%$ no LightGBM**), marcador específico de textos científicos e exatas.
+5. **Pontuação Estruturante Complexa (`pont_estruturante_prop`):** Quinta colocada (**$7,96\%$ no LightGBM** e **$7,53\%$ no Random Forest**), chave no desempate da transição Fundamental II vs. Ensino Médio.
+6. **Pontuação Expressiva (`pont_exp_prop`):** Responde por **$7,12\%$ no Random Forest** e **$4,40\%$ no LightGBM**, operando como a âncora de separação do Ensino Fundamental I.
+7. **Conjunções Subordinativas (`sconj_densidade`):** Contribui com **$6,26\%$ no LightGBM** e **$5,58\%$ no Random Forest**.
+8. **Citações e Referenciação Acadêmica (`citacao_academica_prop`):** Responde por **$6,16\%$ no Random Forest** e **$4,52\%$ no LightGBM** (com altíssima importância por permutação no teste: $0,0430$), eliminando a atração indevida de redações do Ensino Médio para o Ensino Superior.
+9. **Pontuação Delimitadora / Vírgulas (`virgulas_por_sentenca`):** Contribui com **$5,65\%$ no Random Forest** e **$5,57\%$ no LightGBM**.
+10. **Conjunções Coordenativas (`cconj_densidade`):** Contribui com **$4,53\%$ no LightGBM** e **$3,69\%$ no Random Forest**.
+11. **Densidade de Pessoalidade (`pessoalidade_prop`):** Contribui com **$3,92\%$ no LightGBM** e **$3,02\%$ no Random Forest**, discriminando relatos em 1ª pessoa.
+12. **Canonicidade Silábica (`prop_cv`):** Responde por **$4,22\%$ no Random Forest** e **$3,74\%$ no LightGBM**.
+13. **Metadiscurso Acadêmico (`metadiscurso_prop`):** Contribui com **$3,71\%$ no LightGBM** e **$3,71\%$ no Random Forest**.
+14. **Conectivos Argumentativos (`conectivos_argumentativos_prop`):** Contribui com **$3,71\%$ no Random Forest** e **$3,63\%$ no LightGBM**.
+15. **Razão Nominal (`razao_nominal`):** Contribui com **$4,22\%$ no Random Forest** e **$2,69\%$ no LightGBM**.
+
+\newpage
+
+# Exportação em Formato ONNX e Paridade Numérica
+
+O padrão **ONNX (*Open Neural Network Exchange*)** permite que modelos treinados em Python sejam executados em qualquer infraestrutura (C++, Rust, Java, Go, navegadores Web via WebAssembly ou microsserviços em nuvem) através do motor de alto desempenho **ONNX Runtime**, sem dependência do ambiente Python original.
+
+## Especificações Técnicas e Verificação de Paridade
+
+Todos os três modelos foram convertidos para o formato ONNX (versão de Opset 15) e submetidos a testes formais de consistência numérica no conjunto de teste independente ($N = 416$), comparando as previsões de classe e as probabilidades contínuas geradas pelo *ONNX Runtime* com os modelos nativos do *scikit-learn* e *LightGBM*.
+
+```{r tab-onnx}
+tabela_verificacao_onnx(
+  df_onnx,
+  caption = "Especificações Técnicas e Validação de Paridade dos Modelos Exportados em ONNX"
+)
+```
+
+> **Garantia de Paridade em Produção:**  
+> Todos os três modelos alcançaram **$100,0\%$ de concordância nas predições de classe** e discrepância máxima de probabilidade inferior a $7 \times 10^{-7}$ (devido unicamente a arredondamentos de precisão de ponto flutuante de 32 bits).  
+> Os artefatos estão prontos para deploy e salvos no diretório `modelos/`:
+> * `modelos/regressao_logistica.onnx` ($1,1$ KB);
+> * `modelos/random_forest.onnx` ($2,59$ MB);
+> * `modelos/lightgbm.onnx` ($998,0$ KB).
+
+\newpage
+
+## Guia de Inferência em Produção (ONNX Runtime)
+
+O trecho de código abaixo exemplifica como qualquer aplicação cliente pode executar inferências de alta velocidade sobre um novo texto utilizando o arquivo `modelos/lightgbm.onnx` ou `modelos/random_forest.onnx`:
+
+```python
+import numpy as np
+import onnxruntime as rt
+
+# 1. Inicializar sessão de inferência com o modelo ONNX
+sessao = rt.InferenceSession("modelos/lightgbm.onnx")
+nome_entrada = sessao.get_inputs()[0].name
+
+# 2. Vetor de 15 features extraídas do novo texto:
+# [prop_cv, pont_exp_prop, formula_prop, asl, sconj_densidade,
+#  razao_nominal, cconj_densidade, prop_polissilabos, virgulas_por_sentenca, metadiscurso_prop,
+#  citacao_academica_prop, nominalizacao_prop, conectivos_argumentativos_prop,
+#  pont_estruturante_prop, pessoalidade_prop]
+amostra = np.array([[
+    0.185, 0.005, 0.000, 18.2, 0.032,
+    1.450, 0.028, 0.125, 1.20, 0.004,
+    0.001, 0.045, 0.002, 0.018, 0.003
+]], dtype=np.float32)
+
+# 3. Executar inferência (tempo de execução < 1 ms)
+predicoes, probabilidades = sessao.run(None, {nome_entrada: amostra})
+
+mapa_classes = {
+    0: "Ensino Fundamental I",
+    1: "Ensino Fundamental II",
+    2: "Ensino Médio",
+    3: "Ensino Superior"
+}
+
+nivel_detectado = mapa_classes[int(predicoes[0])]
+print(f"Nível de Ensino Predito: {nivel_detectado}")
+```
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura do Pipeline e Scripts
+
+O pipeline analítico e de engenharia de software foi modularizado da seguinte forma:
+
+* **`treinar_modelos_onnx.py`**:
+  * Executa a divisão estratificada (80/20) com protocolo anti-vazamento;
+  * Conduz a validação cruzada 5-Fold estratificada com cálculo de $8$ métricas por fold;
+  * Ajusta os modelos finais no treino e avalia a matriz de confusão e métricas no teste;
+  * Calcula importâncias MDI, Permutation Importance e Ganho;
+  * Converte os modelos para `.onnx` via `skl2onnx` e `onnxmltools`;
+  * Valida a paridade numérica cruzada via `onnxruntime`.
+
+* **`R/funcoes_tabelas.R`**:
+  * `tabela_splits_info()`: tabela de distribuição dos dados;
+  * `tabela_resumo_cv_modelos()`: consolidação dos 5 folds;
+  * `tabela_comparativo_teste_modelos()`: métricas gerais no teste;
+  * `tabela_metricas_classes_modelos()`: métricas por classe;
+  * `tabela_verificacao_onnx()`: auditoria dos arquivos ONNX.
+
+* **`R/funcoes_graficos.R`**:
+  * `plot_comparativo_modelos_barras()`: comparação visual dos modelos;
+  * `plot_matriz_confusao_painel()`: matriz de confusão em heatmap com contagens e percentuais;
+  * `plot_importancia_features_arvores()`: gráfico horizontal de importância relativa.
