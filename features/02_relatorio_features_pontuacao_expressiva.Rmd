@@ -1,0 +1,217 @@
+---
+title: "Relatório de Engenharia de Atributos: Pontuação Expressiva e Dialógica (! e ?)"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com as features extraídas
+caminho_csv <- "dados/features_pontuacao_formula.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_pontuacao_formula.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Relevância da Pontuação Expressiva e Dialógica
+
+A unificação dos pontos de exclamação (`!`) e interrogação (`?`) em uma única métrica captura a **carga de expressividade discursiva e interlocução direta com o leitor**:
+* **Ensino Fundamental I**: Textos fortemente ancorados na oralidade, no diálogo infantil e no engajamento afetivo, repletos de indagações e exclamações enfáticas (*"Você sabia?", "Que legal!"*).
+* **Ensino Médio e Superior**: Prevalência do gênero expositivo-argumentativo formal, impessoal e assertivo, com redução drástica de pontuações expressivas explícitas.
+
+## Regras Especiais de Contagem
+
+Para evitar distorções decorrentes de repetições contíguas ou combinações estilísticas:
+1. **Sequências Homogêneas**: Séries contíguas como `????` ou `!!!!` contam como **apenas 1 ocorrência**.
+2. **Sequências Mistas**: Padrões combinados como `?!`, `!?` ou `!?!?` contam como **1 exclamação e 1 interrogação** (somando 2 unidades na métrica combinada).
+
+```python
+def contar_pontuacoes_especiais(texto: str) -> tuple:
+    clusters = re.findall(r"[?!]+", texto)
+    n_excl = sum(1 for c in clusters if "!" in c)
+    n_interr = sum(1 for c in clusters if "?" in c)
+    return n_excl + n_interr
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade Absoluta de Pontuações Expressivas (`pont_exp_qtd`)**: contagem consolidada de ocorrências de `!` e `?`.
+* **Proporção de Pontuações Expressivas (`pont_exp_prop`)**: densidade relativa em relação ao total de palavras do texto ($\text{pont\_exp\_prop} = \frac{\text{pont\_exp\_qtd}}{\text{total\_palavras}}$).
+
+## Estatísticas Descritivas Globais
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "pont_exp_qtd",
+  var_prop = "pont_exp_prop",
+  label_bruta = "Quantidade Expressiva (bruto)",
+  label_prop = "Proporcao Expressiva (taxa)",
+  caption = "Estatísticas Descritivas Globais da Pontuação Expressiva (! + ?) (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "pont_exp_qtd",
+  var_prop = "pont_exp_prop",
+  label_bruta = "Quantidade (! + ?)",
+  label_prop = "Proporção (! + ?)"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção de Pontuação Expressiva (`pont_exp_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "pont_exp_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Pontuação Expressiva (! + ?)",
+  xlab_val = "Proporção de Pontuações (! + ?)"
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Pontuação Expressiva (`pont_exp_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "pont_exp_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Pontuação Expressiva (! + ?)",
+  xlab_val = "Nº de Ocorrências (! + ?)"
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na quantidade e na proporção de pontuações expressivas dos textos de Ensino Médio em relação ao Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "pont_exp_prop",
+  var_qtd = "pont_exp_qtd",
+  label_prop = "Proporcao Expressiva (! + ?)",
+  label_qtd = "Quantidade Expressiva (! + ?)",
+  caption = "Teste Global de Kruskal-Wallis para Pontuacao Expressiva entre Niveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variações intergrupos massivas ($\chi^2 = 349,6$, $p < 10^{-75}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo de *Cohen's d*.
+
+### Contrastes Pareados na Proporção (`pont_exp_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "pont_exp_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção Expressiva)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`pont_exp_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "pont_exp_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade Absoluta)",
+  casas_decimais = 3
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "pont_exp_prop",
+  ylab_val = "Proporção Média (! + ?)",
+  titulo_grafico = "Proporção Média de Pontuações Expressivas com IC de 95%"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+1. **Ensino Médio vs. Fundamental I ($p = 8,25 \times 10^{-77}$, Cohen's $d = -1,25$)**:
+   A mesclagem de `!` com `?` produziu um **efeito discriminativo monumental** ($d = -1,25$). O Fundamental I possui média de 2,68 pontuações expressivas por texto contra apenas 0,24 no Ensino Médio (uma taxa 12 vezes maior).
+
+2. **Ensino Médio vs. Fundamental II ($p = 3,13 \times 10^{-7}$, Cohen's $d = -0,28$)**:
+   O Fundamental II (média de 0,56) ainda preserva mais do que o dobro de pontuações dialógicas em relação ao Ensino Médio (0,24), separando os dois ciclos da educação básica com alta significância estatística.
+
+3. **Ensino Médio vs. Ensino Superior ($p_{adj} = 1,00$, Cohen's $d = +0,0004$)**:
+   Não há diferença estatística. Ambos compartilham praticamente a mesma taxa basal residual de pontuação expressiva ($0,065\%$).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Monumental** | **Muito Alto** ($-1,25$) | **Feature de separação primária** para Fundamental I. |
+| **Médio vs. Fund. II** | Diferença Significativa | Pequeno/Médio ($-0,28$) | Contribui na separação de Fundamental II vs. Médio. |
+| **Médio vs. Superior** | Sem Diferença | Nulo ($0,00$) | Não discrimina Médio de Superior. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_pontuacao_formula.py`: Script Python com parsing regex para captura unificada de pontuações expressivas.
+* `R/funcoes_estatistica.R`: Rotinas modulares de contrastes pareados com correção de Bonferroni.
+* `R/funcoes_tabelas.R`: Geração padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de intervalos de confiança.

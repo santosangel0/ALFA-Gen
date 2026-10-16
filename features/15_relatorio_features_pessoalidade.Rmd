@@ -1,0 +1,241 @@
+---
+title: "Relatório de Engenharia de Atributos: Densidade de Pessoalidade (1ª Pessoa)"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Garantir execução a partir da raiz do projeto
+if (basename(getwd()) == "features") {
+  setwd("..")
+}
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_pessoalidade.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_lote3.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Linguística: Enunciação Pessoal vs. Impessoalização Dissertativa
+
+A gestão da voz enunciativa constitui um dos parâmetros primordiais do desenvolvimento da escrita escolar (Biber, 1988; Bronckart, 1999):
+
+* **Foco Egocêntrico e Narrativo (Fundamental I e II):** Nos anos iniciais da alfabetização e letramento, o estudante expressa-se através de relatos pessoais, memórias, cartas e crônicas autobiográficas. A narrativa apoia-se em pronomes de 1ª pessoa do singular e do plural (*eu*, *me*, *meu*, *minha*, *nós*, *nosso*).
+* **Impessoalização Canônica (Ensino Médio e Superior):** A partir do Ensino Médio, a matriz curricular brasileira impõe a impessoalização do discurso dissertativo-argumentativo (padrão ENEM, vestibulares e normas científicas ABNT). O uso da 1ª pessoa do singular é explicitamente desestimulado, exigindo-se construções apassivadoras e pronominais de 3ª pessoa (*observa-se*, *constata-se*, *deve-se combater*).
+
+A **Densidade de Pessoalidade** ($\text{pessoalidade\_prop}$) quantifica a frequência relativa de marcas pronominais de 1ª pessoa:
+
+$$\text{pessoalidade\_prop} = \frac{\text{Total de Pronomes de 1ª Pessoa (Retos, Oblíquos e Possessivos)}}{\max(\text{Total de Palavras}, 1)}$$
+
+## Algoritmo em Python (Léxico Fechado de Formas Pronominais de 1ª Pessoa)
+
+A extração identifica o conjunto exato de formas pronominais de 1ª pessoa sobre tokens normalizados:
+
+* **Singular:** *eu*, *me*, *mim*, *comigo*, *meu*, *meus*, *minha*, *minhas*;
+* **Plural:** *nós*, *nos*, *conosco*, *nosso*, *nossos*, *nossa*, *nossas*.
+
+```python
+PRONOMES_1P = {
+    "eu", "me", "mim", "comigo", "meu", "meus", "minha", "minhas",
+    "nos", "conosco", "nosso", "nossos", "nossa", "nossas"
+}
+
+def extrair_pessoalidade(tokens_norm: list) -> tuple:
+    matches = [t for t in tokens_norm if t in PRONOMES_1P]
+    qtd = len(matches)
+    prop = qtd / max(len(tokens_norm), 1)
+    return qtd, prop
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Marcas de Pessoalidade (`pessoalidade_qtd`)**: frequência absoluta no texto.
+* **Proporção de Pessoalidade (`pessoalidade_prop`)**: densidade relativa por palavra.
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 apresenta as medidas descritivas para a totalidade do acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "pessoalidade_qtd",
+  var_prop = "pessoalidade_prop",
+  label_bruta = "Marcas de 1ª Pessoa (Qtd)",
+  label_prop = "Proporção de Pessoalidade",
+  caption = "Estatísticas Descritivas Globais da Densidade de Pessoalidade (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "pessoalidade_qtd",
+  var_prop = "pessoalidade_prop",
+  label_bruta = "Marcas de 1ª Pessoa",
+  label_prop = "Proporção de Pessoalidade"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção de Pessoalidade (`pessoalidade_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "pessoalidade_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Pessoalidade por Nível",
+  xlab_val = "Proporção de Pronomes de 1ª Pessoa",
+  xlim_val = c(0, 0.03)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Marcas de Pessoalidade (`pessoalidade_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "pessoalidade_qtd",
+  titulo_painel = "Painel 2x2: Quantidade Bruta de Pronomes de 1ª Pessoa",
+  xlab_val = "Nº de Pronomes de 1ª Pessoa",
+  xlim_val = c(0, 25)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se existe diferença estatisticamente significativa na densidade de marcas de 1ª pessoa entre os níveis.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "pessoalidade_prop",
+  var_qtd = "pessoalidade_qtd",
+  label_prop = "Proporção de Pessoalidade",
+  label_qtd = "Quantidade de Marcas 1ª Pessoa",
+  caption = "Teste Global de Kruskal-Wallis para Densidade de Pessoalidade entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variação intergrupos altamente significativa ($\chi^2 = 148,65$, $p < 10^{-30}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o Teste U de Wilcoxon com correção de Bonferroni e tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Proporção de Pessoalidade (`pessoalidade_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "pessoalidade_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção de Pessoalidade)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`pessoalidade_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "pessoalidade_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Marcas 1ª Pessoa)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da proporção de pessoalidade com IC de 95%. A linha tracejada destaca a média do Ensino Médio ($0,00249$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "pessoalidade_prop",
+  ylab_val = "Proporção Média de 1ª Pessoa",
+  titulo_grafico = "Proporção Média de Pronomes de 1ª Pessoa com IC de 95% por Nível"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A densidade de pessoalidade retrata fielmente o imperativo de **impessoalização dissertativa**:
+
+1. **Ensino Fundamental I ($0,00490$) e Fundamental II ($0,00518$):**  
+   Apresentam concentração basal de enunciação pessoal, com aproximadamente o **dobro da taxa do Ensino Médio**. O estudante apoia suas ideias em exemplos vivenciais e no universo imediato.
+2. **Ensino Médio ($0,00249$):**  
+   Registra a menor taxa média de pessoalidade de todo o acervo ($0,00249$), refletindo a conformidade com as diretrizes do ENEM, que penalizam explicitamente o uso de 1ª pessoa do singular. A diferença para o Fundamental I e II é altamente significativa ($p < 10^{-10}$, Cohen's $d = -0,41$).
+3. **Ensino Superior ($0,00286$):**  
+   Apresenta patamar de impessoalidade equivalente ao Ensino Médio, com ocorrências pontuais do plural de modéstia acadêmico (*"nosso objetivo"*, *"analisamos os dados"*).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Significativa** | Médio ($-0,39$) | Detecta a ruptura da narrativa autobiográfica. |
+| **Médio vs. Fund. II** | **Diferença Significativa** | Médio ($-0,41$) | **Discrimina textos do Fund. II com resquícios pessoais.** |
+| **Médio vs. Superior** | Sem Diferença Relevante | Inexpressivo ($-0,06$) | Compartilham a norma culta de impessoalização. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_lote3.py`: Identificação de pronomes retos, oblíquos e possessivos de 1ª pessoa nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise descritiva, teste de Kruskal-Wallis e contrastes pareados.
+* `R/funcoes_tabelas.R`: Tabelas padronizadas em LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de médias com IC de 95%.

@@ -1,0 +1,243 @@
+---
+title: "Relatório de Engenharia de Atributos: Conectivos Argumentativos e Conclusivos"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Garantir execução a partir da raiz do projeto
+if (basename(getwd()) == "features") {
+  setwd("..")
+}
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_conectivos_argumentativos.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_lote3.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Linguística: Operadores Discursivos e Argumentação Formal
+
+Na linguística textual (Koch, 2002; Marcuschi, 2008), os **conectivos argumentativos e operadores discursivos** orientam a força argumentativa dos enunciados, estabelecendo relações lógicas de causa, consequência, concessão, oposição formal e encerramento propositivo:
+
+* **Conectivos Conclusivos e Consecutivos:** Orientam a conclusão do raciocínio (*portanto*, *por conseguinte*, *dessa forma*, *desse modo*, *em suma*, *assim sendo*, *diante disso*).
+* **Conectivos de Adição e Continuidade Argumentativa:** Introduzem argumentos convergentes de maior peso (*ademais*, *outrossim*, *além disso*).
+* **Conectivos Opositivos e Concessivos Formais:** Contrapõem argumentos no debate de ideias (*contudo*, *todavia*, *entretanto*, *não obstante*).
+* **Fórmulas de Tese e Proposta de Intervenção:** Típicas da estrutura dissertativo-argumentativa do Ensino Médio e ENEM (*faz-se necessário*, *torna-se evidente*, *cabe ao*, *é primordial*, *deve-se*).
+
+A **Proporção de Conectivos Argumentativos** ($\text{conectivos\_argumentativos\_prop}$) quantifica a densidade desses recursos:
+
+$$\text{conectivos\_argumentativos\_prop} = \frac{\text{Total de Ocorrências de Conectivos Argumentativos}}{\max(\text{Total de Palavras}, 1)}$$
+
+## Algoritmo em Python (Matching Léxico com Expressões Multi-Palavra)
+
+A extração realiza busca exata com delimitação de fronteira de palavra (`\b`) sobre o texto normalizado (sem acentos e minúsculo):
+
+```python
+import re
+
+CONECTIVOS_EXPRESSOES = [
+    "portanto", "por conseguinte", "dessa forma", "desse modo", "em suma",
+    "assim sendo", "diante disso", "ante o exposto", "ademais", "outrossim",
+    "alem disso", "contudo", "todavia", "entretanto", "nao obstante",
+    "faz-se necessario", "torna-se evidente", "cabe ao", "cabe a", "deve-se"
+]
+
+def extrair_conectivos_argumentativos(texto_norm: str, total_palavras: int) -> tuple:
+    total = sum(len(re.findall(r"\b" + re.escape(c) + r"\b", texto_norm)) for c in CONECTIVOS_EXPRESSOES)
+    prop = total / max(total_palavras, 1)
+    return total, prop
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Conectivos Argumentativos (`conectivos_argumentativos_qtd`)**: contagem absoluta no texto.
+* **Proporção de Conectivos Argumentativos (`conectivos_argumentativos_prop`)**: frequência relativa por palavra.
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 apresenta as medidas descritivas para a totalidade do acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "conectivos_argumentativos_qtd",
+  var_prop = "conectivos_argumentativos_prop",
+  label_bruta = "Conectivos Argumentativos (Qtd)",
+  label_prop = "Proporção de Conectivos",
+  caption = "Estatísticas Descritivas Globais de Conectivos Argumentativos (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "conectivos_argumentativos_qtd",
+  var_prop = "conectivos_argumentativos_prop",
+  label_bruta = "Conectivos Argumentativos",
+  label_prop = "Proporção de Conectivos"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção de Conectivos Argumentativos (`conectivos_argumentativos_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "conectivos_argumentativos_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Conectivos por Nível",
+  xlab_val = "Proporção de Conectivos Argumentativos",
+  xlim_val = c(0, 0.015)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Conectivos Argumentativos (`conectivos_argumentativos_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "conectivos_argumentativos_qtd",
+  titulo_painel = "Painel 2x2: Quantidade Bruta de Conectivos Argumentativos",
+  xlab_val = "Nº de Conectivos",
+  xlim_val = c(0, 15)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se existe diferença estatisticamente significativa no emprego de conectivos argumentativos entre os níveis educacionais.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "conectivos_argumentativos_prop",
+  var_qtd = "conectivos_argumentativos_qtd",
+  label_prop = "Proporção de Conectivos",
+  label_qtd = "Quantidade de Conectivos",
+  caption = "Teste Global de Kruskal-Wallis para Conectivos Argumentativos entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variação intergrupos altamente significativa ($\chi^2 = 250,83$, $p < 10^{-50}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o Teste U de Wilcoxon com correção de Bonferroni e tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Proporção de Conectivos (`conectivos_argumentativos_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "conectivos_argumentativos_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção de Conectivos)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`conectivos_argumentativos_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "conectivos_argumentativos_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Conectivos)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da proporção de conectivos com IC de 95%. A linha tracejada destaca a média do Ensino Médio ($0,00151$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "conectivos_argumentativos_prop",
+  ylab_val = "Proporção Média de Conectivos",
+  titulo_grafico = "Proporção Média de Conectivos Argumentativos com IC de 95% por Nível"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A distribuição dos conectivos argumentativos revela o papel crucial da estruturação dissertativa:
+
+1. **Ensino Fundamental I ($0,00056$):**  
+   Uso praticamente inexistente de operadores discursivos formais. A diferença para o Ensino Médio é **altamente significativa ($p = 2,84 \times 10^{-20}$, Cohen's $d = +0,42$)**.
+2. **Ensino Fundamental II ($0,00291$):**  
+   Apresenta concentração em textos didáticos específicos de transição, diferindo estatisticamente do perfil do Ensino Médio.
+3. **Ensino Médio ($0,00151$) e Superior ($0,00291$):**  
+   No Ensino Superior, a argumentação dissertativa expande-se em contraposições epistemológicas e concessões formais (*contudo*, *por conseguinte*, *outrossim*), gerando contraste significativo frente ao Ensino Médio ($p = 1,12 \times 10^{-15}$, Cohen's $d = -0,44$).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Significativa** | Médio ($+0,42$) | Separação de redação narrativa vs. dissertativa. |
+| **Médio vs. Fund. II** | **Diferença Significativa** | Pequeno-Médio ($-0,35$) | Auxilia no desempate da zona de transição. |
+| **Médio vs. Superior** | **Diferença Significativa** | Médio ($-0,44$) | **Diferencia a complexidade argumentativa superior.** |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_lote3.py`: Identificação de expressões e conectivos argumentativos nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise descritiva, teste de Kruskal-Wallis e contrastes pareados.
+* `R/funcoes_tabelas.R`: Tabelas padronizadas em LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de médias com IC de 95%.

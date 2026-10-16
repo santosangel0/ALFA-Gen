@@ -1,0 +1,243 @@
+---
+title: "Relatório de Engenharia de Atributos: Razão Nominal (Substantivos / Verbos)"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Garantir execução a partir da raiz do projeto
+if (basename(getwd()) == "features") {
+  setwd("..")
+}
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_razao_nominal.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_novas_features.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Linguística: Densidade Nominal vs. Dinâmica Verbal
+
+Na linguística textual e na teoria de gêneros discursivos (Biber, 1988), a proporção entre **substantivos** e **verbos** constitui um dos marcadores mais robustos de maturação textual e densidade informacional:
+
+* **Estilo Verbal / Narrativo:** Característico dos anos iniciais da escolarização (Ensino Fundamental I e II). Os textos são estruturados em torno de sequências de ações, eventos cronológicos e diálogos, gerando alta densidade de verbos e formas verbais auxiliares.
+* **Estilo Nominal / Expositivo:** Característico do Ensino Médio e Ensino Superior. A escrita acadêmica e científica opera por **nominalização** — o processo de empacotar processos e fenômenos complexos em substantivos abstratos (ex.: em vez de *"a temperatura aumentou rapidamente"*, emprega-se *"o aumento térmico acelerado"*).
+
+A **Razão Nominal** ($\text{RN}$) quantifica a densidade de substantivos em relação ao fluxo de ações verbais:
+
+$$\text{razao\_nominal} = \frac{\text{Total de Substantivos (NOUN)}}{\max(\text{Total de Verbos e Auxiliares (VERB, AUX)}, 1)}$$
+
+Valores $\text{RN} \approx 1,0$ indicam equilíbrio narrativo, enquanto valores $\text{RN} > 1,8$ evidenciam forte condensação conceitual e estilo dissertativo-expositivo.
+
+## Algoritmo em Python (spaCy e Universal Dependencies)
+
+A extração foi implementada utilizando o modelo pré-treinado **spaCy** (`pt_core_news_sm`), etiquetando tokens alfabéticos sob as classes gramaticais `NOUN` (substantivos) e `VERB`/`AUX` (verbos e auxiliares) da taxonomia *Universal Dependencies*:
+
+```python
+import spacy
+
+nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+
+def extrair_razao_nominal(doc) -> tuple:
+    substantivos = [t for t in doc if t.pos_ == "NOUN"]
+    verbos = [t for t in doc if t.pos_ in ("VERB", "AUX")]
+    
+    n_subst = len(substantivos)
+    n_verb = len(verbos)
+    
+    razao = n_subst / max(n_verb, 1)
+    return n_subst, n_verb, razao
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Substantivos (`substantivos_qtd`)**: contagem bruta de substantivos no texto.
+* **Razão Nominal (`razao_nominal`)**: índice de empacotamento nominal por verbo ($\text{substantivos} / \text{verbos}$).
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas de posição e dispersão para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "substantivos_qtd",
+  var_prop = "razao_nominal",
+  label_bruta = "Quantidade de Substantivos (NOUN)",
+  label_prop = "Razão Nominal (Substantivos / Verbos)",
+  caption = "Estatísticas Descritivas Globais da Razão Nominal (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica para as duas variáveis.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "substantivos_qtd",
+  var_prop = "razao_nominal",
+  label_bruta = "Quantidade de Substantivos",
+  label_prop = "Razão Nominal"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado estritamente com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)` para os 4 níveis educacionais.
+
+## Razão Nominal (`razao_nominal`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "razao_nominal",
+  titulo_painel = "Painel 2x2: Distribuição da Razão Nominal por Nível",
+  xlab_val = "Razão Nominal (Substantivos / Verbos)",
+  xlim_val = c(0.5, 4.0)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Substantivos (`substantivos_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "substantivos_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Substantivos",
+  xlab_val = "Nº de Substantivos",
+  xlim_val = c(0, 300)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na Razão Nominal dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "razao_nominal",
+  var_qtd = "substantivos_qtd",
+  label_prop = "Razão Nominal",
+  label_qtd = "Quantidade de Substantivos",
+  caption = "Teste Global de Kruskal-Wallis para a Razão Nominal entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variações intergrupos altamente significativas ($\chi^2 = 275,14$, $p = 2,39 \times 10^{-59}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Razão Nominal (`razao_nominal`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "razao_nominal",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Razão Nominal)",
+  casas_decimais = 4
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`substantivos_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "substantivos_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Substantivos)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da Razão Nominal com intervalos de confiança de 95% para cada nível educacional. A linha tracejada em vermelho destaca a média do Ensino Médio ($1,86$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "razao_nominal",
+  ylab_val = "Razão Nominal Média (Subst / Verb)",
+  titulo_grafico = "Razão Nominal Média com IC de 95% por Nível de Ensino"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise da Razão Nominal revelou um **nítido gradiente de condensação informacional**:
+
+1. **Ensino Fundamental I ($1,38$):**  
+   Textos com forte predomínio de verbos de ação e narrativa, gerando uma razão substantivo/verbo substancialmente menor. A comparação com o Ensino Médio revela uma **diferença massiva ($p = 5,82 \times 10^{-51}$, Cohen's $d = +0,90$)**.
+2. **Ensino Fundamental II ($1,71$):**  
+   Fase de transição textual. Embora comece a introduzir termos conceituais, ainda preserva maior dinâmica verbal que o Ensino Médio. A diferença para o Ensino Médio é **altamente significativa ($p = 1,38 \times 10^{-4}$, Cohen's $d = +0,29$)**, fornecendo o separador que faltava nos modelos anteriores.
+3. **Ensino Médio ($1,86$) e Ensino Superior ($1,87$):**  
+   Ambos atingem o platô de estilo nominal maduro, com quase o dobro de substantivos em relação a verbos ($p = 1,00$, sem diferença significativa entre si). Essa invariância entre Médio e Superior é benéfica, pois ancora a classe do Ensino Médio e delega a separação do Superior às features de fórmulas e metadiscurso.
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Alto ($+0,90$) | Separação categórica de estilo narrativo vs. expositivo. |
+| **Médio vs. Fund. II** | **Diferença Significativa** | Moderado ($+0,29$) | **Desempata o Fundamental II frente ao Ensino Médio!** |
+| **Médio vs. Superior** | **Sem Diferença** | Inexpressivo ($-0,01$) | Consolida o patamar de maturidade nominal compartilhada. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_novas_features.py`: Extração das classes gramaticais `NOUN` e `VERB`/`AUX` via spaCy em lote sobre os 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise descritiva, teste de Kruskal-Wallis e contrastes de Wilcoxon com correção de Bonferroni.
+* `R/funcoes_tabelas.R`: Renderização padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de médias com IC de 95%.

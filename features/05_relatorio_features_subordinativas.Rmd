@@ -1,0 +1,249 @@
+---
+title: "Relatório de Engenharia de Atributos: Densidade de Conjunções Subordinativas"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_subordinativas.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_subordinativas.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Relevância Sintática das Conjunções Subordinativas
+
+Na gramática da língua portuguesa, as **conjunções subordinativas** conectam orações sintaticamente dependentes à oração principal. Elas constituem o mecanismo nuclear de articulação de hipóteses, causas, concessões, condições, finalidades e relações temporais complexas:
+
+1. **Integrantes**: *que*, *se* (introduzem orações subordinadas substantivas);
+2. **Causais**: *porque*, *visto que*, *já que*, *como*, *uma vez que*;
+3. **Comparativas**: *como*, *que/do que*, *assim como*, *tanto quanto*;
+4. **Concessivas**: *embora*, *ainda que*, *mesmo que*, *se bem que*, *apesar de que*;
+5. **Condicionais**: *se*, *caso*, *desde que*, *contanto que*, *a não ser que*;
+6. **Conformativas**: *conforme*, *segundo*, *consoante*, *como*;
+7. **Consecutivas**: *que* (precedido de *tal*, *tanto*, *tão*), *de modo que*;
+8. **Finais**: *para que*, *a fim de que*;
+9. **Proporcionais**: *à medida que*, *à proporção que*, *ao passo que*;
+10. **Temporais**: *quando*, *enquanto*, *logo que*, *assim que*, *antes que*.
+
+A **Densidade de Conjunções Subordinativas** quantifica o grau de hipotaxe e subordinação lógica por palavra:
+
+$$\text{sconj\_densidade} = \frac{\text{Total de Conjunções Subordinativas}}{\text{Total de Palavras no Texto}}$$
+
+## Algoritmo em Python (spaCy e Universal Dependencies)
+
+Para evitar ambiguidades sintáticas (por exemplo, diferenciar o *que* pronome relativo do *que* conjunção integrante, ou o *se* pronome apassivador do *se* conjunção condicional), a extração foi implementada utilizando o modelo pré-treinado **spaCy** (`pt_core_news_sm`). As conjunções subordinativas são etiquetadas estritamente sob a classe gramatical **`SCONJ`** (*Subordinating Conjunction*) da taxonomia internacional *Universal Dependencies*:
+
+```python
+import spacy
+
+nlp = spacy.load("pt_core_news_sm", disable=["ner", "lemmatizer"])
+
+def extrair_subordinativas(doc) -> tuple:
+    palavras = [t for t in doc if t.is_alpha and not t.is_space]
+    total_palavras = max(len(palavras), 1)
+    
+    sconjs = [t.text.lower() for t in doc if t.pos_ == "SCONJ"]
+    n_sconj = len(sconjs)
+    
+    densidade = n_sconj / total_palavras
+    return n_sconj, densidade
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade Absoluta de Conjunções Subordinativas (`sconj_qtd`)**: contagem bruta de conectivos `SCONJ` no texto.
+* **Densidade de Conjunções Subordinativas (`sconj_densidade`)**: fração de conectivos subordinativos em relação ao total de palavras ($\text{sconj\_densidade} = \frac{\text{sconj\_qtd}}{\text{total\_palavras}}$).
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas de posição e dispersão para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "sconj_qtd",
+  var_prop = "sconj_densidade",
+  label_bruta = "Quantidade de Subordinativas (bruto)",
+  label_prop = "Densidade de Subordinativas (taxa)",
+  caption = "Estatísticas Descritivas Globais das Conjunções Subordinativas (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica para as duas variáveis.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "sconj_qtd",
+  var_prop = "sconj_densidade",
+  label_bruta = "Quantidade de Subordinativas",
+  label_prop = "Densidade de Subordinativas"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)` para os 4 níveis.
+
+## Densidade de Conjunções Subordinativas (`sconj_densidade`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "sconj_densidade",
+  titulo_painel = "Painel 2x2: Distribuição da Densidade de Subordinativas por Nível",
+  xlab_val = "Densidade de Subordinativas (SCONJ / Palavras)",
+  xlim_val = c(0.00, 0.08)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Conjunções Subordinativas (`sconj_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "sconj_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Subordinativas por Nível",
+  xlab_val = "Nº de Conjunções Subordinativas",
+  xlim_val = c(0, 35)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na densidade e na quantidade de conjunções subordinativas dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "sconj_densidade",
+  var_qtd = "sconj_qtd",
+  label_prop = "Densidade de Subordinativas",
+  label_qtd = "Quantidade de Subordinativas",
+  caption = "Teste Global de Kruskal-Wallis para Conjuncoes Subordinativas entre Niveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variações intergrupos altamente significativas ($\chi^2 = 244,9$, $p < 10^{-52}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Densidade (`sconj_densidade`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "sconj_densidade",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Densidade de Subordinativas)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`sconj_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "sconj_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Subordinativas)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da densidade de conjunções subordinativas com intervalos de confiança de 95% para cada nível educacional. A linha tracejada em vermelho destaca a média do Ensino Médio ($2,21\%$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "sconj_densidade",
+  ylab_val = "Densidade Média (SCONJ / Palavras)",
+  titulo_grafico = "Densidade Média de Conjunções Subordinativas com IC de 95%"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise revelou um **perfil discursivo singular para o Ensino Médio**:
+
+1. **Ensino Médio vs. Fundamental I ($p = 2,34 \times 10^{-42}$, Cohen's $d = -1,04$)**:
+   Diferença estatística massiva com tamanho de efeito muito alto ($d > 1$). No Fundamental I, os textos são predominantemente narrativos e conversacionais, repletos de orações temporais, causais e integrantes (*quando*, *porque*, *que* disse).
+
+2. **Ensino Médio vs. Fundamental II ($p = 6,34 \times 10^{-23}$, Cohen's $d = -0,66$)**:
+   Diferença altamente significativa. O Fundamental II exibe densidade substantivamente superior ($3,07\%$ vs. $2,21\%$), articulando períodos explicativos em ciências e história.
+
+3. **Ensino Médio vs. Ensino Superior ($p = 4,38 \times 10^{-29}$, Cohen's $d = -0,60$)**:
+   Diferença altamente significativa. O Ensino Superior apresenta densidade de subordinação acentuadamente maior ($3,11\%$ vs. $2,21\%$). Textos acadêmicos exigem argumentação hipotática densa (*posto que*, *uma vez que*, *à medida que*, *embora*).
+
+> **A Assinatura do Ensino Médio:**
+> No acervo CAEd, os excertos do Ensino Médio concentram resumos conceituais, sínteses enciclopédicas e guias práticos com períodos assertivos e coordenação, resultando na **menor densidade de subordinação de todo o acervo**. Essa feature atua como um **marcador distintivo negativo do Ensino Médio contra todos os outros 3 níveis**!
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Muito Alto ($-1,04$) | Forte separação discursiva. |
+| **Médio vs. Fund. II** | **Diferença Significativa** | Moderado/Alto ($-0,66$) | Isola o Ensino Médio do Fundamental II. |
+| **Médio vs. Superior** | **Diferença Significativa** | Moderado/Alto ($-0,60$) | Isola o Ensino Médio do Ensino Superior. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_subordinativas.py`: Pipeline Python com modelo `pt_core_news_sm` do spaCy em lote (`nlp.pipe`), etiquetando orações e tokens sob a classe morfossintática `SCONJ`.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise estatística descritiva e testes de Wilcoxon com correção de Bonferroni.
+* `R/funcoes_tabelas.R`: Formatação padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de intervalos de confiança com parametrização dinâmica.

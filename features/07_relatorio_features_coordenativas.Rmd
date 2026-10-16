@@ -1,0 +1,241 @@
+---
+title: "Relatório de Engenharia de Atributos: Conjunções Coordenativas (CCONJ)"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares a partir da pasta R
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_coordenativas.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_novas_features.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Sintática: Coordenação e Articulação Paratática
+
+Na sintaxe da língua portuguesa, as **conjunções coordenativas** conectam termos ou orações de função gramatical equivalente, estabelecendo relações lógicas independentes (paratáticas). Elas dividem-se em cinco subclasses semânticas:
+
+1. **Aditivas:** *e*, *nem*, *não só... mas também*;
+2. **Adversativas:** *mas*, *porém*, *contudo*, *todavia*, *entretanto*, *no entanto*;
+3. **Alternativas:** *ou*, *ou... ou*, *ora... ora*, *quer... quer*;
+4. **Conclusivas:** *logo*, *portanto*, *por conseguinte*, *assim*, *pois* (posposto ao verbo);
+5. **Explicativas:** *pois* (anteposto ao verbo), *porque*, *que*.
+
+Nos estágios iniciais de letramento (Ensino Fundamental I), a conjunção aditiva *"e"* atua como o principal mecanismo de encadeamento narrativo e oralidade (polissíndeto infantil). À medida que a escolaridade avança para o Ensino Médio e Superior, os períodos tornam-se sintaticamente mais densos, diversificando os conectivos adversativos e conclusivos, enquanto reduzem a redundância aditiva.
+
+A **Densidade de Conjunções Coordenativas** quantifica a taxa de conectivos paratáticos por palavra:
+
+$$\text{cconj\_densidade} = \frac{\text{Total de Conjunções Coordenativas (CCONJ)}}{\text{Total de Palavras no Texto}}$$
+
+## Algoritmo em Python (spaCy e Universal Dependencies)
+
+A extração foi implementada via **spaCy** (`pt_core_news_sm`), filtrando os conectivos sob a classe gramatical **`CCONJ`** (*Coordinating Conjunction*):
+
+```python
+import spacy
+
+nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+
+def extrair_coordenativas(doc) -> tuple:
+    palavras = [t for t in doc if t.is_alpha and not t.is_space]
+    total_palavras = max(len(palavras), 1)
+    
+    cconjs = [t.text.lower() for t in doc if t.pos_ == "CCONJ"]
+    n_cconj = len(cconjs)
+    
+    densidade = n_cconj / total_palavras
+    return n_cconj, densidade
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Conjunções Coordenativas (`cconj_qtd`)**: contagem bruta de tokens `CCONJ` no texto.
+* **Densidade de Conjunções Coordenativas (`cconj_densidade`)**: fração de conectivos coordenativos em relação ao total de palavras ($\text{cconj\_densidade} = \frac{\text{cconj\_qtd}}{\text{total\_palavras}}$).
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas de posição e dispersão para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "cconj_qtd",
+  var_prop = "cconj_densidade",
+  label_bruta = "Quantidade de Coordenativas (CCONJ)",
+  label_prop = "Densidade de Coordenativas (taxa)",
+  caption = "Estatísticas Descritivas Globais das Conjunções Coordenativas (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica para as duas variáveis.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "cconj_qtd",
+  var_prop = "cconj_densidade",
+  label_bruta = "Quantidade de Coordenativas",
+  label_prop = "Densidade de Coordenativas"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)` para os 4 níveis educacionais.
+
+## Densidade de Conjunções Coordenativas (`cconj_densidade`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "cconj_densidade",
+  titulo_painel = "Painel 2x2: Distribuição da Densidade de Coordenativas por Nível",
+  xlab_val = "Densidade de Coordenativas (CCONJ / Palavras)",
+  xlim_val = c(0.00, 0.08)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Conjunções Coordenativas (`cconj_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "cconj_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Coordenativas",
+  xlab_val = "Nº de Conjunções Coordenativas",
+  xlim_val = c(0, 40)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na densidade e quantidade de conjunções coordenativas dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "cconj_densidade",
+  var_qtd = "cconj_qtd",
+  label_prop = "Densidade de Coordenativas",
+  label_qtd = "Quantidade de Coordenativas",
+  caption = "Teste Global de Kruskal-Wallis para Conjunções Coordenativas entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variação intergrupos altamente significativa ($\chi^2 = 105,40$, $p = 1,07 \times 10^{-22}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Densidade (`cconj_densidade`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "cconj_densidade",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Densidade de Coordenativas)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`cconj_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "cconj_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Coordenativas)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da densidade de conjunções coordenativas com intervalos de confiança de 95% para cada nível educacional. A linha tracejada em vermelho destaca a média do Ensino Médio ($3,17\%$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "cconj_densidade",
+  ylab_val = "Densidade Média (CCONJ / Palavras)",
+  titulo_grafico = "Densidade Média de Conjunções Coordenativas com IC de 95%"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise da densidade de conjunções coordenativas identificou um **nítido gradiente decrescente de aditividade oral**:
+
+1. **Ensino Médio vs. Fundamental I ($p = 2,38 \times 10^{-20}$, Cohen's $d = -0,67$):**  
+   Diferença estatisticamente massiva com tamanho de efeito moderado a alto. O Fundamental I possui a maior taxa de coordenativas de todo o acervo ($3,99\%$), impulsionada pelo uso massivo do conectivo aditivo *"e"* para encadear ações narrativas.
+2. **Ensino Médio vs. Fundamental II ($p = 1,25 \times 10^{-5}$, Cohen's $d = -0,29$):**  
+   Diferença altamente significativa. O Fundamental II exibe densidade substantivamente maior ($3,52\%$ vs. $3,17\%$), comprovando que a progressão para o Ensino Médio exige maior coesão textual e redução da coordenação frouxa.
+3. **Ensino Médio ($3,17\%$) e Ensino Superior ($3,30\%$):**  
+   Ambos mantêm densidades de coordenação controladas e moderadas ($p = 0,39$, sem diferença estatística), utilizando conectivos adversativos e conclusivos de forma cirúrgica.
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Moderado/Alto ($-0,67$) | Isola o Fundamental I pela sobrecarga de coordenação aditiva. |
+| **Médio vs. Fund. II** | **Diferença Significativa** | Moderado ($-0,29$) | **Separa o Fundamental II do Ensino Médio.** |
+| **Médio vs. Superior** | **Sem Diferença** | Inexpressivo ($-0,10$) | Estabiliza o patamar de coordenação madura. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_novas_features.py`: Extração das classes gramaticais `CCONJ` via spaCy sob o padrão Universal Dependencies.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise estatística descritiva e testes de Wilcoxon com correção de Bonferroni.
+* `R/funcoes_tabelas.R`: Formatação padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de intervalos de confiança com parametrização dinâmica.

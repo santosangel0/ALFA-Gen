@@ -1,0 +1,245 @@
+---
+title: "Relatório de Engenharia de Atributos: Sufixos Abstratos e Nominalizações"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Garantir execução a partir da raiz do projeto
+if (basename(getwd()) == "features") {
+  setwd("..")
+}
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_nominalizacao.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_lote3.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Linguística: Morfologia Derivacional e Densidade Conceitual
+
+Na evolução da competência escrita em língua portuguesa, a capacidade de **derivação morfológica sufixal** para criar substantivos abstratos é um indicador clássico de sofisticação cognitiva e textual:
+
+* **Linguagem Baseada em Verbos (Anos Iniciais):** O estudante descreve o mundo por ações concretas (*"as pessoas poluem o rio"*, *"o aluno se posiciona"*).
+* **Linguagem Nominalizada e Conceitual (Ensino Médio e Superior):** As ações verbais são transformadas em conceitos condensados por meio de sufixos de nominalização deverbais e deadjetivais:
+  * *-ção / -são / -xão:* transformação de processos em estados conceituais (*poluição*, *conclusão*, *conexão*, *transformação*);
+  * *-mento:* atos ou resultados de ações (*desenvolvimento*, *posicionamento*, *conhecimento*);
+  * *-dade:* propriedades qualitativas e estados abstratos (*sociedade*, *sustentabilidade*, *diversidade*);
+  * *-ismo:* sistemas de pensamento e ideologias (*capitalismo*, *individualismo*, *mecanismo*);
+  * *-ência / -ância:* qualidades ou estados permanentes (*ciência*, *importância*, *relevância*);
+  * *-tude:* condições existenciais ou quantitativas (*juventude*, *magnitude*).
+
+A **Proporção de Nominalizações Abstratas** ($\text{nominalizacao\_prop}$) é calculada como:
+
+$$\text{nominalizacao\_prop} = \frac{\text{Total de Palavras com Sufixos Abstratos}}{\max(\text{Total de Palavras}, 1)}$$
+
+## Algoritmo em Python (Matching de Sufixos em Formas Canônicas)
+
+A identificação é realizada sobre os tokens normalizados alfabéticos com comprimento $\ge 6$ caracteres para evitar colisões com palavras monossilábicas ou curtas:
+
+```python
+import re
+
+RE_NOMINALIZACAO = re.compile(
+    r"\b[a-z]{3,}(?:cao|coes|sao|soes|xao|xoes|mento|mentos|dade|dades|ismo|ismos|encia|encias|ancia|ancias|tude|tudes)\b"
+)
+
+def extrair_nominalizacoes(tokens_normalizados: list) -> tuple:
+    matches = [t for t in tokens_normalizados if RE_NOMINALIZACAO.match(t)]
+    qtd = len(matches)
+    prop = qtd / max(len(tokens_normalizados), 1)
+    return qtd, prop
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Nominalizações (`nominalizacao_qtd`)**: frequência absoluta de substantivos com sufixos abstratos.
+* **Proporção de Nominalizações (`nominalizacao_prop`)**: densidade relativa em relação ao total de palavras.
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 apresenta as medidas descritivas para a totalidade do acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "nominalizacao_qtd",
+  var_prop = "nominalizacao_prop",
+  label_bruta = "Nominalizações Abstratas (Qtd)",
+  label_prop = "Proporção de Nominalizações",
+  caption = "Estatísticas Descritivas Globais de Nominalizações e Sufixos Abstratos (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "nominalizacao_qtd",
+  var_prop = "nominalizacao_prop",
+  label_bruta = "Nominalizações Abstratas",
+  label_prop = "Proporção de Nominalizações"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção de Nominalizações (`nominalizacao_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "nominalizacao_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Nominalizações por Nível",
+  xlab_val = "Proporção de Palavras com Sufixos Abstratos",
+  xlim_val = c(0, 0.16)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Nominalizações (`nominalizacao_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "nominalizacao_qtd",
+  titulo_painel = "Painel 2x2: Quantidade Bruta de Nominalizações Abstratas",
+  xlab_val = "Nº de Nominalizações",
+  xlim_val = c(0, 150)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se existe diferença estatisticamente significativa na densidade de nominalizações do Ensino Médio frente aos demais níveis.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "nominalizacao_prop",
+  var_qtd = "nominalizacao_qtd",
+  label_prop = "Proporção de Nominalizações",
+  label_qtd = "Quantidade de Nominalizações",
+  caption = "Teste Global de Kruskal-Wallis para Nominalizações Abstratas entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variação intergrupos altamente significativa ($\chi^2 = 560,21$, $p < 10^{-100}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o Teste U de Wilcoxon com correção de Bonferroni e tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Proporção de Nominalizações (`nominalizacao_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "nominalizacao_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção de Nominalizações)",
+  casas_decimais = 4
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`nominalizacao_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "nominalizacao_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Nominalizações)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da proporção de nominalizações com IC de 95%. A linha tracejada destaca a média do Ensino Médio ($0,0486$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "nominalizacao_prop",
+  ylab_val = "Proporção Média de Nominalizações",
+  titulo_grafico = "Proporção Média de Nominalizações com IC de 95% por Nível de Ensino"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise da densidade morfológica abstrata evidencia um padrão evolutivo claro:
+
+1. **Ensino Fundamental I ($0,0237$):**  
+   Densidade nominal abstrata extremamente reduzida (apenas $2,4\%$ das palavras). O vocabulário é primariamente concreto. A comparação com o Ensino Médio revela uma **diferença massiva ($p = 2,41 \times 10^{-71}$, Cohen's $d = +1,18$)**.
+2. **Ensino Fundamental II ($0,0513$) e Ensino Médio ($0,0486$):**  
+   Apresentam patamar consolidado de nominalizações (~$5\%$ das palavras), sem diferenças acentuadas entre si na média geral.
+3. **Ensino Superior ($0,0786$):**  
+   Apresenta o ápice da densidade conceitual morfológica, com quase $8\%$ do léxico constituído por termos de derivação abstrata erudita, distinguindo-se expressivamente do Ensino Médio ($p = 1,28 \times 10^{-68}$, Cohen's $d = -1,22$).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Enorme ($+1,18$) | Isola vocabulário concreto elementar. |
+| **Médio vs. Fund. II** | Sem Diferença Relevante | Inexpressivo ($-0,12$) | Compartilham o estágio inicial de abstração textual. |
+| **Médio vs. Superior** | **Diferença Massiva** | Enorme ($-1,22$) | **Separação categórica entre redação e artigo acadêmico!** |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_lote3.py`: Identificação de derivação morfológica sufixal via regex nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise descritiva, teste de Kruskal-Wallis e contrastes pareados.
+* `R/funcoes_tabelas.R`: Tabelas padronizadas em LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de médias com IC de 95%.

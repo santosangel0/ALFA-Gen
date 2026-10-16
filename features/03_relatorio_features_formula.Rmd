@@ -1,0 +1,216 @@
+---
+title: "Relatório de Engenharia de Atributos: Palavra 'formula'"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com as features extraídas
+caminho_csv <- "dados/features_pontuacao_formula.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_pontuacao_formula.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Relevância da Palavra 'formula' e Expressões Matemáticas
+
+Nos acervos educacionais (notadamente nos textos expositivos e acadêmicos extraídos da Wikimedia/Wikibooks no dataset CAEd), notações matemáticas e equações formais representam uma linha divisória fundamental entre o ensino básico e o ensino superior:
+* No **Ensino Fundamental I e II**, fórmulas matemáticas praticamente não ocorrem na leitura geral em prosa.
+* No **Ensino Médio**, equações aparecem de modo moderado em tópicos específicos de exatas e ciências da natureza.
+* No **Ensino Superior**, manuais técnicos, engenharias, logística, economia e computação concentram densidade massiva de deduções analíticas, onde notações $\text{LaTeX}$ (`<math>...</math>`) foram convertidas em identificadores do tipo `formula_1`, `formula_2`, além do emprego frequente do termo *fórmula*.
+
+## Regra de Contagem
+
+A contagem considera o termo com e sem acentuação, no singular e no plural, bem como identificadores numéricos de expressões matemáticas:
+$$\text{Padrão Regex} \colon \quad \texttt{\textbackslash b[fF][óÓoO]rmula\textbackslash w*}$$
+
+```python
+def contar_palavra_formula(texto: str) -> int:
+    matches = re.findall(r"\b[fF][óÓoO]rmula\w*", texto)
+    return len(matches)
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade Absoluta de Ocorrências (`formula_qtd`)**: contagem de fórmulas por texto.
+* **Proporção de Ocorrências (`formula_prop`)**: densidade relativa sobre o total de palavras do texto ($\text{formula\_prop} = \frac{\text{formula\_qtd}}{\text{total\_palavras}}$).
+
+## Estatísticas Descritivas Globais
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "formula_qtd",
+  var_prop = "formula_prop",
+  label_bruta = "Quantidade de Fórmulas (bruto)",
+  label_prop = "Proporção de Fórmulas (taxa)",
+  caption = "Estatísticas Descritivas Globais da Palavra 'formula' (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "formula_qtd",
+  var_prop = "formula_prop",
+  label_bruta = "Quantidade de Fórmulas",
+  label_prop = "Proporção de Fórmulas"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção da Palavra 'formula' (`formula_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "formula_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Fórmulas por Nível",
+  xlab_val = "Proporção da Palavra 'formula'"
+)
+```
+
+\newpage
+
+## Quantidade Absoluta da Palavra 'formula' (`formula_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "formula_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Fórmulas por Nível",
+  xlab_val = "Nº de Ocorrências de 'formula'"
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na quantidade e na proporção da palavra 'formula' dos textos de Ensino Médio em relação ao Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "formula_prop",
+  var_qtd = "formula_qtd",
+  label_prop = "Proporcao de Formulas",
+  label_qtd = "Quantidade de Formulas",
+  caption = "Teste Global de Kruskal-Wallis para Formulas entre Niveis de Ensino"
+)
+```
+
+O teste de Kruskal-Wallis revela variação intergrupos expressiva ($\chi^2 = 293,1$, $p < 10^{-60}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo de *Cohen's d*.
+
+### Contrastes Pareados na Proporção (`formula_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "formula_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção de Fórmulas)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`formula_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "formula_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Fórmulas)",
+  casas_decimais = 3
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "formula_prop",
+  ylab_val = "Proporção Média de 'formula'",
+  titulo_grafico = "Proporção Média da Palavra 'formula' com IC de 95%"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+1. **Ensino Médio vs. Fundamental I ($p = 1,43 \times 10^{-12}$, Cohen's $d = +0,30$)**:
+   O Ensino Médio possui expressivamente mais fórmulas que o Fundamental I, onde apenas 4 textos em 297 contêm o termo.
+
+2. **Ensino Médio vs. Fundamental II ($p = 1,57 \times 10^{-13}$, Cohen's $d = +0,31$)**:
+   A mesma disparidade se observa em relação ao Fundamental II, onde notações matemáticas em prosa são praticamente nulas (média de 0,015).
+
+3. **Ensino Médio vs. Ensino Superior ($p = 1,80 \times 10^{-40}$, Cohen's $d = -0,63$)**:
+   **O Ensino Superior possui densidade maciça de fórmulas** (média de 10,71 ocorrências por texto contra 1,87 no Ensino Médio; taxa quase 6 vezes maior: $2,87\%$ vs. $0,51\%$).
+   * Este é o **divisor fundamental** que complementa a canonicidade silábica: enquanto a canonicidade satura entre Médio e Superior ($p = 0,359$), a contagem de **'formula'** separa esses dois estratos com $p < 10^{-39}$ e tamanho de efeito moderado a alto ($d = -0,63$).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | Diferença Significativa | Médio ($+0,30$) | Separação da educação básica inicial. |
+| **Médio vs. Fund. II** | Diferença Significativa | Médio ($+0,31$) | Separação da educação básica inicial. |
+| **Médio vs. Superior** | **Diferença Massiva** | **Moderado/Alto** ($-0,63$) | **Divisor-chave para isolar Ensino Superior**. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_pontuacao_formula.py`: Script Python com regex para contagem abrangente de tokens de equações e da palavra 'formula'.
+* `R/funcoes_estatistica.R`: Rotinas modulares de estatística descritiva e testes não paramétricos.
+* `R/funcoes_tabelas.R`: Formatação padronizada em LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painel $2 \times 2$ e gráficos de intervalos de confiança com parametrização dinâmica.

@@ -1,0 +1,242 @@
+---
+title: "Relatório de Engenharia de Atributos: Densidade de Vírgulas por Sentença"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares a partir da pasta R
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_virgulas.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_novas_features.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Sintática: Pontuação Estrutural e Intercalações Frásicas
+
+Diferentemente dos pontos de exclamação e interrogação (que assinalam expressividade e oralidade), a **vírgula** é um operador sintático de estruturação interna do período. Na gramática normativa da língua portuguesa, o uso da vírgula é estritamente condicionado por regras de sintaxe:
+
+1. **Enumerações e Termos Coordenados Assindéticos:** separação de termos de mesma função sintática sem conectivo;
+2. **Apostos e Vocativos:** isolamento obrigatório de núcleos explicativos;
+3. **Orações Adjetivas Explicativas:** demarcação de orações introduzidas por pronomes relativos;
+4. **Adjuntos Adverbiais Deslocados:** antecipação de circunstâncias de tempo, lugar, causa e modo no início ou meio da oração;
+5. **Orações Subordinadas Adverbiais Antepostas:** inversão da ordem direta canônica (Sujeito-Verbo-Objeto).
+
+Nos anos iniciais (Fundamental I), a escrita infantil opera quase exclusivamente na ordem direta linear, gerando textos com pouquíssimas vírgulas. No Ensino Médio, a elaboração textual atinge o ápice de intercalações, apostos e enumerações sintéticas, gerando uma taxa muito elevada de vírgulas por período. No Ensino Superior, a consolidação de períodos hipotáticos integrados reduz a necessidade de intercalações fragmentadas.
+
+A **Densidade de Vírgulas por Sentença** quantifica a média de segmentações sintáticas internas por período:
+
+$$\text{virgulas\_por\_sentenca} = \frac{\text{Total de Vírgulas no Texto}}{\max(\text{Total de Sentenças no Texto}, 1)}$$
+
+## Algoritmo em Python (spaCy e Contagem Estrutural)
+
+A contagem de vírgulas e a segmentação de sentenças foram realizadas pelo modelo **spaCy** (`pt_core_news_sm`), garantindo limites sentenciais rigorosos via `doc.sents`:
+
+```python
+import spacy
+
+nlp = spacy.load("pt_core_news_sm", disable=["ner"])
+
+def extrair_virgulas(texto: str, doc) -> tuple:
+    n_virgulas = texto.count(",")
+    sentencas = list(doc.sents)
+    total_sentencas = max(len(sentencas), 1)
+    
+    taxa_por_sentenca = n_virgulas / total_sentencas
+    return n_virgulas, total_sentencas, taxa_por_sentenca
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Vírgulas (`virgulas_qtd`)**: contagem absoluta de vírgulas no texto.
+* **Vírgulas por Sentença (`virgulas_por_sentenca`)**: média de vírgulas por período frásico ($\text{virgulas\_por\_sentenca} = \frac{\text{virgulas\_qtd}}{\text{total\_sentencas}}$).
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas de posição e dispersão para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "virgulas_qtd",
+  var_prop = "virgulas_por_sentenca",
+  label_bruta = "Quantidade Total de Vírgulas",
+  label_prop = "Vírgulas por Sentença (taxa)",
+  caption = "Estatísticas Descritivas Globais das Vírgulas por Sentença (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica para as duas variáveis.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "virgulas_qtd",
+  var_prop = "virgulas_por_sentenca",
+  label_bruta = "Quantidade de Vírgulas",
+  label_prop = "Vírgulas por Sentença"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado estritamente com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)` para os 4 níveis educacionais.
+
+## Vírgulas por Sentença (`virgulas_por_sentenca`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "virgulas_por_sentenca",
+  titulo_painel = "Painel 2x2: Distribuição de Vírgulas por Sentença por Nível",
+  xlab_val = "Vírgulas por Sentença",
+  xlim_val = c(0.0, 4.0)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Vírgulas (`virgulas_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "virgulas_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Vírgulas",
+  xlab_val = "Nº Total de Vírgulas",
+  xlim_val = c(0, 100)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na densidade de vírgulas por sentença dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "virgulas_por_sentenca",
+  var_qtd = "virgulas_qtd",
+  label_prop = "Vírgulas por Sentença",
+  label_qtd = "Quantidade de Vírgulas",
+  caption = "Teste Global de Kruskal-Wallis para Vírgulas por Sentença entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variações intergrupos altamente significativas ($\chi^2 = 245,17$, $p = 7,25 \times 10^{-53}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados nas Vírgulas por Sentença (`virgulas_por_sentenca`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "virgulas_por_sentenca",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Vírgulas por Sentença)",
+  casas_decimais = 4
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`virgulas_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "virgulas_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Vírgulas)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias de vírgulas por sentença com intervalos de confiança de 95% para cada nível educacional. A linha tracejada em vermelho destaca a média do Ensino Médio ($1,58$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "virgulas_por_sentenca",
+  ylab_val = "Vírgulas por Sentença (Média)",
+  titulo_grafico = "Média de Vírgulas por Sentença com IC de 95% por Nível"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise da densidade de vírgulas por sentença revelou uma **assinatura discriminante única para o Ensino Médio**:
+
+1. **Ensino Médio vs. Fundamental I ($p = 7,32 \times 10^{-39}$, Cohen's $d = +0,89$):**  
+   Diferença estatística massiva com tamanho de efeito muito alto. O Fundamental I possui a menor taxa de vírgulas por sentença ($1,09$), devido à linearidade da escrita infantil sem orações intercaladas.
+2. **Ensino Médio vs. Ensino Superior ($p = 1,58 \times 10^{-28}$, Cohen's $d = +0,56$):**  
+   **Diferença altamente significativa com tamanho de efeito moderado a alto.** O Ensino Médio possui **muito mais vírgulas por período ($1,58$) que o Ensino Superior ($1,25$)**. Isso decorre do estilo de resumos, tópicos conceituais, orações coordenadas assindéticas e apostos característicos das provas do Ensino Médio no acervo CAEd.
+3. **Ensino Médio ($1,58$) e Fundamental II ($1,53$):**  
+   Apresentam valores próximos ($p = 0,30$), atuando como marcador compartilhado de transição sintática.
+
+> **Importância no Classificador Multivariado:**  
+> A feature de vírgulas por sentença atua como um **separador positivo do Ensino Médio contra o Ensino Superior**, resolvendo precisamente a confusão entre textos do Médio e do Superior que não contêm fórmulas matemáticas!
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Alto ($+0,89$) | Separação linear de complexidade de períodos. |
+| **Médio vs. Superior** | **Diferença Significativa** | Moderado/Alto ($+0,56$) | **Separa o Ensino Médio do Ensino Superior!** |
+| **Médio vs. Fund. II** | **Sem Diferença** | Inexpressivo ($+0,08$) | Comportamento estável de transição. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_novas_features.py`: Segmentação sentencial via spaCy e contagem de vírgulas nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise estatística descritiva e testes de Wilcoxon com correção de Bonferroni.
+* `R/funcoes_tabelas.R`: Formatação padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de intervalos de confiança com parametrização dinâmica.

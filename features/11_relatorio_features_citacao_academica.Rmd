@@ -1,0 +1,243 @@
+---
+title: "Relatório de Engenharia de Atributos: Citações e Referenciação Acadêmica"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Garantir execução a partir da raiz do projeto
+if (basename(getwd()) == "features") {
+  setwd("..")
+}
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_citacao_academica.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_lote3.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Linguística: Indexação e Discurso Acadêmico Formal
+
+Na comunicação científica e acadêmica, a referenciação bibliográfica e a citação formal constituem o elemento demarcador mais específico de nível universitário:
+
+* **Educação Básica (Fundamental I, II e Médio):** A intertextualidade se manifesta primordialmente por alusões orais simplificadas (*"segundo o autor"*, *"de acordo com Aristóteles"*), sem indexação cronológica precisa, notação de autoria padronizada ou indicação de páginas e seções normatizadas pela ABNT.
+* **Ensino Superior:** O discurso acadêmico opera obrigatoriamente através da intertextualidade indexada: anos parentéticos associados a autores `(SILVA, 2018)`, citações diretas com paginação `(p. 45)`, expressões latinas de autoridade científica (*et al.*, *apud*, *ibid.*) e numeração hierárquica de seções (`1.1`, `2.3`).
+
+A presença de padrões formais de citação permite separar categoricamente textos do Ensino Superior sem fórmulas matemáticas (monografias, artigos de ciências humanas, jurídicas e sociais) de redações formais do Ensino Médio, resolvendo a principal confusão observada no classificador.
+
+A **Proporção de Citações Acadêmicas** ($\text{citacao\_academica\_prop}$) é computada como:
+
+$$\text{citacao\_academica\_prop} = \frac{\text{Total de Marcadores Formais de Citação e Referência}}{\max(\text{Total de Palavras}, 1)}$$
+
+## Algoritmo em Python (Expressões Regulares e Padrões ABNT)
+
+A extração identifica cinco classes complementares de referenciação científica:
+
+1. **Citações Parentéticas com Autoria e Ano:** `\([A-ZÀ-Ú][a-zà-úA-ZÀ-Ú\s\.,;&\-]+,?\s*(?:19|20)\d{2}[a-z]?\)`;
+2. **Anos Parentéticos Isolados:** `\((?:19|20)\d{2}[a-z]?\)`;
+3. **Termos Canônicos de Citação:** `et al.`, `apud`, `ibid.`, `op. cit.`;
+4. **Indicação de Paginação Acadêmica:** `p. \d+`, `pp. \d+`, `págs. \d+`;
+5. **Seções Hierárquicas Numeradas:** `^[1-9]\.[0-9]\s+[A-ZÀ-Ú]`.
+
+```python
+import re
+
+RE_CIT_AUTOR_ANO = re.compile(r"\([A-ZÀ-Ú][a-zà-úA-ZÀ-Ú\s\.,;&\-]+,?\s*(?:19|20)\d{2}[a-z]?\)")
+RE_CIT_ANO = re.compile(r"\((?:19|20)\d{2}[a-z]?\)")
+RE_CIT_TERMOS = re.compile(r"\b(?:et\s+al\.?|apud|ibid\.?|op\.\s*cit\.?)\b", re.IGNORECASE)
+RE_PAGINACAO = re.compile(r"\b(?:p\.|pp\.|págs?\.)\s*\d+\b", re.IGNORECASE)
+RE_SECAO = re.compile(r"^(?:[1-9]\.[0-9])\s+[A-ZÀ-Ú]", re.MULTILINE)
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Marcadores de Citação (`citacao_academica_qtd`)**: contagem absoluta no texto.
+* **Proporção de Citações Acadêmicas (`citacao_academica_prop`)**: densidade relativa por palavra.
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas descritivas para a totalidade do acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "citacao_academica_qtd",
+  var_prop = "citacao_academica_prop",
+  label_bruta = "Marcadores de Citação (Qtd)",
+  label_prop = "Proporção de Citações Acadêmicas",
+  caption = "Estatísticas Descritivas Globais de Citações e Referências Acadêmicas (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "citacao_academica_qtd",
+  var_prop = "citacao_academica_prop",
+  label_bruta = "Marcadores de Citação",
+  label_prop = "Proporção de Citações"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado estritamente com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção de Citações Acadêmicas (`citacao_academica_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "citacao_academica_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Citações por Nível",
+  xlab_val = "Proporção de Citações Acadêmicas",
+  xlim_val = c(0, 0.015)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Marcadores de Citação (`citacao_academica_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "citacao_academica_qtd",
+  titulo_painel = "Painel 2x2: Quantidade Bruta de Citações Acadêmicas",
+  xlab_val = "Nº de Marcadores de Citação",
+  xlim_val = c(0, 20)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se existe diferença estatisticamente significativa nos padrões de citação do Ensino Médio frente aos demais estratos.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "citacao_academica_prop",
+  var_qtd = "citacao_academica_qtd",
+  label_prop = "Proporção de Citações",
+  label_qtd = "Quantidade de Citações",
+  caption = "Teste Global de Kruskal-Wallis para Citações Acadêmicas entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variação intergrupos altamente significativa ($\chi^2 = 295,47$, $p < 10^{-60}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o Teste U de Wilcoxon com correção de Bonferroni e tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Proporção de Citações (`citacao_academica_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "citacao_academica_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção de Citações)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`citacao_academica_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "citacao_academica_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Citações)",
+  casas_decimais = 3
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da proporção de citações com IC de 95%. A linha tracejada destaca a média do Ensino Médio ($0,00025$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "citacao_academica_prop",
+  ylab_val = "Proporção Média de Citações",
+  titulo_grafico = "Proporção Média de Citações com IC de 95% por Nível de Ensino"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise de Citações e Referenciação Acadêmica confirmou seu papel como **o discriminador mais potente entre Ensino Médio e Ensino Superior**:
+
+1. **Ensino Fundamental I e II ($0,00016$ e $0,00008$):**  
+   Praticamente ausência total de qualquer menção a anos bibliográficos ou notações acadêmicas.
+2. **Ensino Médio ($0,00025$):**  
+   Nível residual mínimo, restrito a raríssimas citações de repertório sociocultural em redações.
+3. **Ensino Superior ($0,00316$):**  
+   Apresenta uma média **$13$ vezes superior à do Ensino Médio**, gerando um contraste de magnitude extraordinária ($p = 2,15 \times 10^{-38}$, Cohen's $d = -0,48$).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | Sem Diferença Relevante | Inexpressivo ($+0,04$) | Ambos possuem ausência basal de citações formais. |
+| **Médio vs. Fund. II** | Sem Diferença Relevante | Inexpressivo ($+0,08$) | Ambos não empregam indexação ABNT. |
+| **Médio vs. Superior** | **Diferença Massiva** | Alto ($-0,48$, $13\times$ maior) | **Elimina a confusão de Ensino Médio classificado como Superior!** |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_lote3.py`: Extração de padrões parentéticos, termos científicos e ABNT nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise descritiva, teste de Kruskal-Wallis e contrastes pareados.
+* `R/funcoes_tabelas.R`: Tabelas padronizadas em LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de médias com IC de 95%.

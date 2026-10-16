@@ -1,0 +1,241 @@
+---
+title: "Relatório de Engenharia de Atributos: Pontuação Estruturante Complexa"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Garantir execução a partir da raiz do projeto
+if (basename(getwd()) == "features") {
+  setwd("..")
+}
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_pont_estruturante.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_lote3.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Linguística: Pontuação Sintática vs. Pontuação Básica
+
+Enquanto a pontuação básica (ponto final e vírgula) atende a funções de segmentação respiratória e listagem simples, a **pontuação estruturante complexa** reflete o domínio de hierarquias sintáticas e oracionais intrincadas:
+
+* **Ponto e Vírgula (`;`):** Empregado primariamente para separar orações coordenadas extensas que já possuem vírgulas internas, articular contrastes antitéticos ou listar itens argumentativos. No Ensino Fundamental, sua ocorrência é estatisticamente rara.
+* **Dois Pontos (`:`):** Além de introduzir citações diretas, opera na escrita madura como operador catafórico de explicitação, síntese ou enumeração analítica.
+* **Parênteses Explicativos (`(...)`):** Introduzem apostos circunstanciais, contextualizações históricas, siglas e comentários metatextuais sem romper o fluxo da oração principal.
+* **Travessões de Aposto (`—` ou `--`):** Isolam segmentos oracionais para ênfase argumentativa.
+
+A **Proporção de Pontuação Estruturante** ($\text{pont\_estruturante\_prop}$) quantifica essa densidade sintática:
+
+$$\text{pont\_estruturante\_prop} = \frac{\text{Total de Símbolos Estruturantes (; , : , ( , —)}}{\max(\text{Total de Palavras}, 1)}$$
+
+## Algoritmo em Python (Contagem de Pontuação Estruturante)
+
+A extração contabiliza as ocorrências no texto original:
+
+```python
+import re
+
+def extrair_pontuacao_estruturante(texto: str, total_palavras: int) -> tuple:
+    ponto_virgula = texto.count(";")
+    dois_pontos = texto.count(":")
+    parenteses = texto.count("(")
+    travessoes = len(re.findall(r"(?:—|--)", texto))
+    
+    total = ponto_virgula + dois_pontos + parenteses + travessoes
+    prop = total / max(total_palavras, 1)
+    return total, prop
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Pontuação Estruturante (`pont_estruturante_qtd`)**: contagem absoluta no texto.
+* **Proporção de Pontuação Estruturante (`pont_estruturante_prop`)**: densidade por palavra.
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 apresenta as medidas descritivas para a totalidade do acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "pont_estruturante_qtd",
+  var_prop = "pont_estruturante_prop",
+  label_bruta = "Pontuação Estruturante (Qtd)",
+  label_prop = "Proporção de Pontuação Estruturante",
+  caption = "Estatísticas Descritivas Globais de Pontuação Estruturante Complexa (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "pont_estruturante_qtd",
+  var_prop = "pont_estruturante_prop",
+  label_bruta = "Pontuação Estruturante",
+  label_prop = "Proporção Estruturante"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`.
+
+## Proporção de Pontuação Estruturante (`pont_estruturante_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "pont_estruturante_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção de Pontuação Estruturante por Nível",
+  xlab_val = "Proporção de Pontuação Estruturante",
+  xlim_val = c(0, 0.05)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Pontuação Estruturante (`pont_estruturante_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "pont_estruturante_qtd",
+  titulo_painel = "Painel 2x2: Quantidade Bruta de Pontuação Estruturante",
+  xlab_val = "Nº de Símbolos Estruturantes",
+  xlim_val = c(0, 40)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se existe diferença estatisticamente significativa na densidade de pontuação estruturante do Ensino Médio frente aos demais estratos.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "pont_estruturante_prop",
+  var_qtd = "pont_estruturante_qtd",
+  label_prop = "Proporção Estruturante",
+  label_qtd = "Quantidade Estruturante",
+  caption = "Teste Global de Kruskal-Wallis para Pontuação Estruturante entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variação intergrupos altamente significativa ($\chi^2 = 478,92$, $p < 10^{-100}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o Teste U de Wilcoxon com correção de Bonferroni e tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Proporção Estruturante (`pont_estruturante_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "pont_estruturante_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção Estruturante)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`pont_estruturante_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "pont_estruturante_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade Estruturante)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da proporção de pontuação estruturante com IC de 95%. A linha tracejada destaca a média do Ensino Médio ($0,0209$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "pont_estruturante_prop",
+  ylab_val = "Proporção Média Estruturante",
+  titulo_grafico = "Pontuação Estruturante Média com IC de 95% por Nível de Ensino"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A pontuação estruturante complexa atua como um **divisor de águas fundamental entre o Ensino Fundamental e o Ensino Médio**:
+
+1. **Ensino Fundamental I ($0,0102$) e Fundamental II ($0,0090$):**  
+   Densidade de pontuação estruturante inferior a $1\%$, concentrada basicamente em dois pontos pré-diálogos.
+2. **Ensino Médio ($0,0209$):**  
+   Apresenta um salto para mais que o **dobro da média do Fundamental II** ($0,0209$ vs. $0,0090$), gerando uma **diferença estatística maciça ($p = 4,21 \times 10^{-42}$, Cohen's $d = +0,85$)**. Este atributo isola o Ensino Médio das ambiguidades com o Fundamental II.
+3. **Ensino Superior ($0,0241$):**  
+   Consolida o patamar de alta estruturação sintática, com presença frequente de parênteses explicativos e ponto e vírgula em enumerações técnicas.
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Grande ($+0,81$) | Separa orações elementares de períodos articulados. |
+| **Médio vs. Fund. II** | **Diferença Massiva** | Grande ($+0,85$) | **Resolve com alta potência a fronteira Fund. II vs. Médio!** |
+| **Médio vs. Superior** | Diferença Leve | Pequeno ($-0,18$) | Consolida a maturidade sintática compartilhada. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_lote3.py`: Contagem e proporção de `;`, `:`, `( )` e travessões nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise descritiva, teste de Kruskal-Wallis e contrastes pareados.
+* `R/funcoes_tabelas.R`: Tabelas padronizadas em LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de médias com IC de 95%.

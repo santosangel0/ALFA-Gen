@@ -1,0 +1,242 @@
+---
+title: "Relatório de Engenharia de Atributos: Metadiscurso e Léxico Acadêmico"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares a partir da pasta R
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_metadiscurso.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_novas_features.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## Fundamentação Pragmática: O Metadiscurso Científico e Acadêmico
+
+Na análise do discurso e na linguística aplicada (Hyland, 2005), o **metadiscurso** refere-se aos recursos linguísticos que organizam o próprio texto, explicitam a postura metodológica do pesquisador e guiam a interpretação do leitor no ambiente acadêmico:
+
+* **Discurso Escolar Básico:** Centrado no conteúdo empírico imediato, em histórias, instruções diretas ou descrições cotidianas. Não há menção a métodos de investigação, revisão bibliográfica ou hipóteses.
+* **Discurso Acadêmico-Científico (Ensino Superior):** É intrinsecamente metadiscursivo. Os textos debatem a própria produção do conhecimento, citando fontes (*segundo o autor*, *estudos recentes*), explicitando a arquitetura empírica (*metodologia*, *dados coletados*, *amostra analisada*), referenciando artefatos de representação (*tabela*, *figura*, *gráfico*) e formulando conclusões qualificadas (*os resultados evidenciam*, *a hipótese formulada*).
+
+Muitos textos universitários (em especial nas áreas de Humanas, Ciências Sociais, Educação e Letras) **não contêm fórmulas matemáticas**. O metadiscurso atua como o principal marcador para identificar esses textos acadêmicos não exatos.
+
+A **Densidade de Metadiscurso Acadêmico** quantifica a taxa de termos epistemológicos por palavra:
+
+$$\text{metadiscurso\_prop} = \frac{\text{Ocorrências de Termos de Metadiscurso Acadêmico}}{\text{Total de Palavras no Texto}}$$
+
+## Algoritmo em Python (Léxico Calibrado e Normalização)
+
+A extração utiliza um conjunto controlado de lemas acadêmicos da língua portuguesa (*autor*, *pesquisa*, *metodologia*, *dados*, *análise*, *conclusão*, *tabela*, *artigo*, *evidência*, *hipótese*, *teoria*, etc.), processando as palavras com normalização Unicode:
+
+```python
+METADISCURSO_TERMOS = {
+    "autor", "autores", "pesquisa", "pesquisas", "pesquisador", "metodologia",
+    "dados", "analise", "conclusao", "tabela", "figura", "grafico", "artigo",
+    "evidencia", "hipotese", "resultado", "resultados", "teoria", "referencia",
+    "cientifico", "cientifica", "academico", "academica", "experimento"
+}
+
+def extrair_metadiscurso(doc) -> tuple:
+    palavras = [t.text.lower() for t in doc if t.is_alpha]
+    total_palavras = max(len(palavras), 1)
+    
+    n_meta = sum(1 for p in palavras if normalizar_texto(p) in METADISCURSO_TERMOS)
+    prop = n_meta / total_palavras
+    return n_meta, prop
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Quantidade de Termos Metadiscursivos (`metadiscurso_qtd`)**: contagem absoluta de ocorrências no texto.
+* **Densidade de Metadiscurso (`metadiscurso_prop`)**: fração relativa de termos acadêmicos ($\text{metadiscurso\_prop} = \frac{\text{metadiscurso\_qtd}}{\text{total\_palavras}}$).
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas de posição e dispersão para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "metadiscurso_qtd",
+  var_prop = "metadiscurso_prop",
+  label_bruta = "Quantidade de Termos Acadêmicos",
+  label_prop = "Densidade de Metadiscurso (taxa)",
+  caption = "Estatísticas Descritivas Globais do Metadiscurso Acadêmico (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica para as duas variáveis.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "metadiscurso_qtd",
+  var_prop = "metadiscurso_prop",
+  label_bruta = "Quantidade de Metadiscurso",
+  label_prop = "Densidade de Metadiscurso"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado estritamente com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)` para os 4 níveis educacionais.
+
+## Densidade de Metadiscurso (`metadiscurso_prop`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "metadiscurso_prop",
+  titulo_painel = "Painel 2x2: Distribuição da Densidade de Metadiscurso por Nível",
+  xlab_val = "Densidade de Metadiscurso Acadêmico",
+  xlim_val = c(0.000, 0.035)
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Termos Metadiscursivos (`metadiscurso_qtd`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "metadiscurso_qtd",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Bruta de Termos Acadêmicos",
+  xlab_val = "Nº de Ocorrências",
+  xlim_val = c(0, 20)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa na densidade de metadiscurso dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "metadiscurso_prop",
+  var_qtd = "metadiscurso_qtd",
+  label_prop = "Densidade de Metadiscurso",
+  label_qtd = "Quantidade de Metadiscurso",
+  caption = "Teste Global de Kruskal-Wallis para Metadiscurso Acadêmico entre Níveis"
+)
+```
+
+O teste de Kruskal-Wallis confirma variações intergrupos colossais ($\chi^2 = 298,76$, $p = 1,84 \times 10^{-64}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Densidade (`metadiscurso_prop`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "metadiscurso_prop",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Densidade de Metadiscurso)",
+  casas_decimais = 5
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta (`metadiscurso_qtd`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "metadiscurso_qtd",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade de Metadiscurso)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias da densidade de metadiscurso com intervalos de confiança de 95% para cada nível educacional. A linha tracejada em vermelho destaca a média do Ensino Médio ($0,55\%$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "metadiscurso_prop",
+  ylab_val = "Densidade Média de Metadiscurso",
+  titulo_grafico = "Densidade Média de Metadiscurso com IC de 95% por Nível"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+A análise da densidade de metadiscurso acadêmico confirmou um **salto exponencial no Ensino Superior**:
+
+1. **Ensino Médio vs. Ensino Superior ($p = 1,78 \times 10^{-32}$, Cohen's $d = -0,53$):**  
+   **Diferença altamente significativa com tamanho de efeito moderado.** A densidade média de metadiscurso no Ensino Superior é de **$1,10\%$ ($4,10$ termos por texto)** — exatamente o **dobro** da média observada no Ensino Médio ($0,55\%$, $2,05$ termos). Essa feature atua como o atrator definidor para classificar textos do Ensino Superior que não possuem fórmulas matemáticas!
+2. **Ensino Médio vs. Fundamental I ($p = 4,45 \times 10^{-8}$, Cohen's $d = +0,42$):**  
+   Diferença altamente significativa. No Fundamental I, termos de pesquisa e metodologia são quase inexistentes ($0,23\%$).
+3. **Ensino Médio ($0,55\%$) e Fundamental II ($0,54\%$):**  
+   Apresentam frequências basais idênticas ($p = 0,069$, sem diferença significativa), confirmando que o salto de metadiscurso ocorre exclusivamente na transição para a universidade.
+
+> **Resolução do Gargalo de Classificação:**  
+> A feature de metadiscurso resolve o ponto cego da feature `formula_prop`: enquanto as fórmulas separam os textos de Exatas/Biológicas do Superior, o metadiscurso resgata os textos acadêmicos de Humanas e Sociais Aplicadas.
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Superior** | **Diferença Significativa** | Moderado ($-0,53$) | **Isola os textos do Superior que não contêm fórmulas!** |
+| **Médio vs. Fund. I** | **Diferença Significativa** | Moderado ($+0,42$) | Separação adicional do Fundamental I. |
+| **Médio vs. Fund. II** | **Sem Diferença** | Inexpressivo ($+0,02$) | Patamar estável do ensino básico. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_novas_features.py`: Mapeamento léxico normalizado de termos acadêmicos via spaCy nos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas modulares de análise estatística descritiva e testes de Wilcoxon com correção de Bonferroni.
+* `R/funcoes_tabelas.R`: Formatação padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de intervalos de confiança com parametrização dinâmica.

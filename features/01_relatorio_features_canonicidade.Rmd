@@ -1,0 +1,319 @@
+---
+title: "Relatório de Engenharia de Atributos: Canonicidade Silábica (CV)"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_canonicidade.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_canonicidade.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição de Palavra Canônica e Algoritmo em Python
+
+## Canonicidade Silábica
+
+Na fonologia da língua portuguesa e nas matrizes de avaliação diagnóstica de leitura (como no CAEd e na BNCC), a **canonicidade silábica** representa a estrutura silábica primária:
+
+* **Sílaba Canônica**: Estrutura formada estritamente por **uma Consoante e uma Vogal simples (CV)**. Exemplos: *ca*, *be*, *ça*, *ne*, *la*, *lu*, *ta*, *so*, *pa*.
+* **Sílabas Não Canônicas**: Qualquer estrutura com travamento pós-vocálico (*coda*, CVC: *jur*, *pis*, *can*), núcleos vocálicos sem consoante de ataque (V: *a-*, *u-*), encontros consonantais (CCV: *pra*, *tra*), dígrafos ou ditongos (CVV: *lhei*, *quei*).
+* **Palavra Canônica**: Vocábulo no qual **todas as sílabas** pertencem estritamente ao tipo CV.
+  * *Exemplos Canônicos*: **cabeça** (ca-be-ça), **canela** (ca-ne-la), **janela** (ja-ne-la), **luta** (lu-ta), **sopa** (so-pa).
+  * *Exemplos Não Canônicos*: **abajur** (a-ba-jur), **lápis** (lá-pis), **cansado** (can-sa-do), **asa** (a-sa), **alheio** (al-hei-o).
+
+Em termos formais, uma palavra é canônica em português se e somente se é formada pela alternância perfeita de consoante simples e vogal simples, com comprimento par $\ge 2$:
+$$\text{Palavra Canônica} \iff w \in (C \cdot V)^+$$
+
+## O Algoritmo em Python (NLTK)
+
+A extração foi implementada em Python (`extrair_canonicidade.py`) utilizando a biblioteca **NLTK** para tokenização alfabética nos 2.076 arquivos `.txt` contidos no acervo:
+
+```python
+VOGAIS = set("aeiouáéíóúâêôãõàü")
+CONSOANTES = set("bcçdfghjklmnpqrstvwxyz")
+
+def classificar_canonicidade(palavra: str) -> bool:
+    termo = re.sub(r"[^a-záéíóúâêôãõàüç]", "", palavra.lower().strip())
+    if len(termo) < 2 or len(termo) % 2 != 0:
+        return False
+    for i, char in enumerate(termo):
+        if i % 2 == 0 and char not in CONSOANTES:
+            return False
+        if i % 2 == 1 and char not in VOGAIS:
+            return False
+    return True
+```
+
+\newpage
+
+# Distribuição Global da Feature nos 2.076 Textos
+
+Analisamos duas variáveis derivadas para cada um dos 2.076 textos do acervo:
+1. **Quantidade Absoluta de Palavras Canônicas (`palavras_cv`)**: total bruto de palavras estritamente CV no texto.
+2. **Proporção de Palavras Canônicas (`prop_cv`)**: densidade relativa sobre o total de palavras do texto ($\text{prop\_cv} = \frac{\text{palavras\_cv}}{\text{total\_palavras}}$).
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 apresenta as medidas de síntese para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(df)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 ilustra os histogramas com curvas de densidade empírica para as duas métricas.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(df)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Conforme estabelecido, o painel $2 \times 2$ foi construído utilizando `par(mfrow = c(2, 2))` e `hist(freq = FALSE)`, exibindo a densidade empírica e a normal teórica ajustada para cada nível.
+
+## Proporção de Palavras Canônicas (`prop_cv`)
+
+```{r painel-mfrow-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "prop_cv",
+  titulo_painel = "Painel 2x2: Distribuição da Proporção CV por Nível de Ensino"
+)
+```
+
+\newpage
+
+## Quantidade Absoluta de Palavras Canônicas (`palavras_cv`)
+
+```{r painel-mfrow-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "palavras_cv",
+  titulo_painel = "Painel 2x2: Distribuição da Quantidade Absoluta CV por Nível de Ensino"
+)
+```
+
+\newpage
+
+# Testes de Hipóteses de Normalidade
+
+Para contornar limitações de poder estatístico, foram aplicados **três testes formais de normalidade**:
+1. **Teste de Shapiro-Wilk** ($W$)
+2. **Teste de Anderson-Darling** ($A$)
+3. **Teste de Lilliefors / Kolmogorov-Smirnov** ($D$)
+
+Hipóteses:
+* $H_0$: A distribuição dos dados é normal.
+* $H_1$: A distribuição dos dados não é normal.
+
+## Resultados para a Proporção de Palavras CV
+
+```{r testes-normalidade-prop}
+tabela_bateria_normalidade(
+  df,
+  var_nome = "prop_cv",
+  caption = "Resultados dos 3 Testes de Normalidade para a Proporcao de Palavras CV"
+)
+```
+
+## Resultados para a Quantidade Absoluta de Palavras CV
+
+```{r testes-normalidade-qtd}
+tabela_bateria_normalidade(
+  df,
+  var_nome = "palavras_cv",
+  caption = "Resultados dos 3 Testes de Normalidade para a Quantidade Absoluta CV"
+)
+```
+
+> **Decisão:** Todos os três testes rejeitam categoricamente a normalidade ($p < 0,001$) tanto no conjunto global quanto nos recortes por nível. Conclui-se que a distribuição **não é gaussiana**, demandando métodos inferenciais não paramétricos.
+
+\newpage
+
+# Testes de Hipóteses de Simetria
+
+Para testar a simetria com robustez, foram aplicados **três testes não paramétricos de simetria** (pacote `lawstat`):
+1. **Miao-Gel-Gastwirth (MGG, 2006)**
+2. **Cabilio-Masaro (CM, 1996)**
+3. **Mira (M, 1999)**
+
+Hipóteses:
+* $H_0$: A distribuição é simétrica em torno da sua mediana.
+* $H_1$: A distribuição é assimétrica.
+
+## Resultados para a Proporção de Palavras CV
+
+```{r testes-simetria-prop}
+tabela_bateria_simetria(
+  df,
+  var_nome = "prop_cv",
+  caption = "Resultados dos 3 Testes Nao Parametricos de Simetria para Proporcao CV"
+)
+```
+
+## Resultados para a Quantidade Absoluta de Palavras CV
+
+```{r testes-simetria-qtd}
+tabela_bateria_simetria(
+  df,
+  var_nome = "palavras_cv",
+  caption = "Resultados dos 3 Testes Nao Parametricos de Simetria para Quantidade CV"
+)
+```
+
+> **Decisão:** Os três testes não paramétricos rejeitam a hipótese de simetria ($p < 0,001$ no global). Há **assimetria positiva persistente** ($\text{skewness} > 0$), com cauda estendida para valores superiores de canonicidade.
+
+\newpage
+
+# Teste da Hipótese Fundamental: Ensino Médio vs. Outros Níveis
+
+Investiga-se se **existe diferença estatisticamente significativa na quantidade e na proporção de palavras CV dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(df)
+```
+
+O teste de Kruskal-Wallis confirma diferenças globais altamente significativas entre os quatro níveis ($p < 10^{-16}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney**, com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados na Proporção de Palavras CV (`prop_cv`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "prop_cv",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Proporção CV)",
+  casas_decimais = 4
+)
+```
+
+### Contrastes Pareados na Quantidade Absoluta de Palavras CV (`palavras_cv`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "palavras_cv",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Quantidade Absoluta CV)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias e os respectivos intervalos de confiança de 95% para os quatro níveis, com a linha tracejada fixando a média do Ensino Médio ($19,50\%$).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(df)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+1. **Ensino Médio vs. Fundamental I ($p = 3,34 \times 10^{-5}$, Cohen's $d = +0,35$)**:
+   O Ensino Médio possui taxa e quantidade de palavras CV **significativamente maiores** que o Fundamental I. Nos anos iniciais, a brevidade textual média (~335 palavras) e o uso concentrado de monossílabos gramaticais não CV (*e*, *um*, *os*, *por*, *com*) reduzem a proporção global de palavras puramente CV.
+
+2. **Ensino Médio vs. Fundamental II ($p = 3,33 \times 10^{-12}$, Cohen's $d = +0,52$)**:
+   O Fundamental II apresenta a **menor proporção de palavras CV** de todo o acervo ($17,58\%$). Nesse ciclo escolar, há a inserção maciça de vocabulário científico e expositivo repleto de prefixos e sufixos com travamento silábico (*trans-*, *cons-*, *-ção*, *-mento*) e encontros consonantais (*pr-*, *cl-*, *tr-*), inflacionando as sílabas CVC e CCV.
+
+3. **Ensino Médio vs. Ensino Superior ($p_{adj} = 1,00$, $p_{raw} = 0,359$, Cohen's $d = +0,09$)**:
+   **Não existe diferença estatisticamente significativa na proporção de palavras CV** entre o Ensino Médio ($19,50\%$) e o Ensino Superior ($19,17\%$). A canonicidade silábica estabiliza-se no Ensino Médio.
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | Diferença Significativa | Médio ($+0,35$) | Forte poder discriminativo. |
+| **Médio vs. Fund. II** | Diferença Significativa | Moderado/Alto ($+0,52$) | Excelente poder discriminativo. |
+| **Médio vs. Superior** | Sem Diferença | Desprezível ($+0,09$) | Não separa isoladamente; exige features de léxico técnico e sintaxe. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+O pipeline do projeto foi inteiramente modularizado em scripts especializados dentro do diretório `R/`, mantendo documentação no padrão **roxygen2** e separadores de régua padronizados (`#` seguido de 80 caracteres `=`).
+
+## Estrutura do Diretório de Funções
+
+* `R/funcoes_estatistica.R`: Cálculos de estatísticas univariadas, rotinas dos 3 testes de normalidade, 3 testes de simetria (pacote `lawstat`) e contrastes pareados do Ensino Médio.
+* `R/funcoes_tabelas.R`: Formatação e renderização em LaTeX via `knitr::kable` e `kableExtra`.
+* `R/funcoes_graficos.R`: Rotinas gráficas em R base (`plot_distribuicao_global`, `plot_painel_2x2_niveis` e `plot_medias_ci_niveis`).
+* `extrair_canonicidade.py`: Script Python/NLTK para processamento e contagem em lote nos 2.076 arquivos `.txt`.
+
+## Código: Módulo de Estatística (`R/funcoes_estatistica.R`)
+
+```r
+# ================================================================================
+# Funções estatísticas modulares:
+# - calcular_estatisticas_descritivas(x, na.rm = TRUE)
+# - executar_tres_testes_normalidade(x)
+# - executar_tres_testes_simetria(x, boot = FALSE)
+# - executar_comparacoes_pares_em(df, var_nome)
+# ================================================================================
+```
+
+## Código: Módulo de Tabelas (`R/funcoes_tabelas.R`)
+
+```r
+# ================================================================================
+# Funções de renderização de tabelas LaTeX:
+# - tabela_descritivas_globais(df, caption)
+# - tabela_bateria_normalidade(df, var_nome, caption)
+# - tabela_bateria_simetria(df, var_nome, caption)
+# - tabela_kruskal_wallis_global(df, caption)
+# - tabela_comparacoes_ensino_medio(df, var_nome, caption, casas_decimais)
+# ================================================================================
+```
+
+## Código: Módulo de Gráficos (`R/funcoes_graficos.R`)
+
+```r
+# ================================================================================
+# Funções gráficas em R base:
+# - plot_distribuicao_global(df)
+# - plot_painel_2x2_niveis(df, var_nome, titulo_painel)
+# - plot_medias_ci_niveis(df)
+# ================================================================================
+```

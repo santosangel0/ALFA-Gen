@@ -1,0 +1,239 @@
+---
+title: "Relatório de Engenharia de Atributos: Comprimento Médio da Sentença (ASL)"
+subtitle: "Diagnóstico Distribucional e Análise Comparativa entre Níveis de Ensino"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 3
+    number_sections: true
+geometry: "margin=2cm"
+header-includes:
+  - \usepackage{microtype}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+  - \usepackage{longtable}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "H"
+)
+
+# Carregar scripts modulares
+source("R/funcoes_estatistica.R")
+source("R/funcoes_tabelas.R")
+source("R/funcoes_graficos.R")
+
+# Carregar dataset com a feature extraída
+caminho_csv <- "dados/features_asl.csv"
+if (!file.exists(caminho_csv)) {
+  system(".venv\\Scripts\\python.exe python/extrair_features_asl.py")
+}
+df <- read.csv(caminho_csv, stringsAsFactors = FALSE)
+
+# Ordenação pedagógica dos níveis
+ordem_niveis <- c("Ensino Fundamental I", "Ensino Fundamental II", "Ensino Médio", "Ensino Superior")
+df$nivel_completo <- factor(df$nivel_completo, levels = ordem_niveis)
+```
+
+\newpage
+
+# Definição da Feature e Algoritmo de Extração
+
+## O Papel do ASL na Legibilidade e Complexidade Sintática
+
+O **Comprimento Médio da Sentença (*Average Sentence Length* - ASL)** é a métrica fundacional de praticamente todos os índices clássicos de legibilidade textual (como Flesch Reading Ease, Flesch-Kincaid, Gunning Fog e Coleman-Liau):
+
+$$ASL = \frac{\text{Total de Palavras no Texto}}{\text{Total de Sentenças no Texto}}$$
+
+Na psicolinguística educacional:
+* **Períodos Simples e Curtos (Fundamental I)**: Leitores em processo inicial de alfabetização processam com mais facilidade estruturas coordenadas diretas com poucas orações encaixadas ($ASL \approx 14 \text{ a } 17$ palavras).
+* **Períodos Compostos e Hipotaxe (Fundamental II e Médio)**: Ocorre ampliação da subordinação oracional (causais, temporais, conformativas, relativas), aumentando a extensão dos períodos ($ASL \approx 20 \text{ a } 24$ palavras).
+* **Períodos Acadêmicos e Alta Densidade Informativa (Superior)**: Textos de graduação e manuais especializados articulam orações reduzidas de gerúndio e particípio, intercalações explicativas e vocabulário denso, resultando nos maiores períodos médios ($ASL > 25$ palavras).
+
+## Algoritmo em Python (NLTK)
+
+A extração utiliza a biblioteca **NLTK** com o modelo `punkt_tab` para tokenização de sentenças em língua portuguesa e filtragem de tokens alfabéticos:
+
+```python
+from nltk.tokenize import sent_tokenize, word_tokenize
+
+def extrair_asl(texto: str) -> tuple:
+    sentencas = sent_tokenize(texto, language='portuguese')
+    total_sentencas = max(len(sentencas), 1)
+    
+    palavras = [t for t in word_tokenize(texto, language='portuguese') 
+                if re.search(r"^[a-záéíóúâêôãõàüç]+$", t.lower())]
+    total_palavras = max(len(palavras), 1)
+    
+    asl = total_palavras / total_sentencas
+    return total_sentencas, asl
+```
+
+\newpage
+
+# Distribuição Global nos 2.076 Textos
+
+Analisamos duas variáveis derivadas:
+* **Comprimento Médio da Sentença (`asl`)**: média de palavras por sentença no texto.
+* **Total de Sentenças (`total_sentencas`)**: contagem bruta de períodos delimitados no texto.
+
+## Estatísticas Descritivas Globais
+
+A Tabela 1 sintetiza as medidas de posição e dispersão para todo o acervo.
+
+```{r descritivas-globais}
+tabela_descritivas_globais(
+  df,
+  var_bruta = "total_sentencas",
+  var_prop = "asl",
+  label_bruta = "Total de Sentencas por Texto",
+  label_prop = "Comprimento Medio da Sentenca (ASL)",
+  caption = "Estatísticas Descritivas Globais do ASL e Sentenças (N = 2.076)"
+)
+```
+
+## Visualização Global da Distribuição
+
+A Figura 1 apresenta os histogramas com curvas de densidade empírica para as duas métricas.
+
+```{r hist-global, fig.width=7.5, fig.height=3.8}
+plot_distribuicao_global(
+  df,
+  var_bruta = "total_sentencas",
+  var_prop = "asl",
+  label_bruta = "Total de Sentenças",
+  label_prop = "ASL (Palavras por Sentença)"
+)
+```
+
+\newpage
+
+# Distribuição da Feature por Nível de Ensino (Painel 2x2)
+
+Apresentamos o painel $2 \times 2$ gerado com `par(mfrow = c(2, 2))` e `hist(freq = FALSE)` para os 4 níveis.
+
+## Comprimento Médio da Sentença (`asl`)
+
+```{r painel-prop-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "asl",
+  titulo_painel = "Painel 2x2: Distribuição do ASL por Nível de Ensino",
+  xlab_val = "ASL (Palavras por Sentença)",
+  xlim_val = c(5, 60)
+)
+```
+
+\newpage
+
+## Total de Sentenças por Texto (`total_sentencas`)
+
+```{r painel-qtd-2x2, fig.width=7.5, fig.height=7}
+plot_painel_2x2_niveis(
+  df,
+  var_nome = "total_sentencas",
+  titulo_painel = "Painel 2x2: Distribuição do Total de Sentenças por Nível",
+  xlab_val = "Total de Sentenças por Texto",
+  xlim_val = c(2, 50)
+)
+```
+
+\newpage
+
+# Comparação Fundamental: Ensino Médio vs. Outros Níveis
+
+Verificamos se **existe diferença estatisticamente significativa no ASL dos textos de Ensino Médio quando comparados com Ensino Fundamental I, Fundamental II e Ensino Superior**.
+
+## Teste Global de Kruskal-Wallis
+
+```{r teste-kruskal}
+tabela_kruskal_wallis_global(
+  df,
+  var_prop = "asl",
+  var_qtd = "total_sentencas",
+  label_prop = "Comprimento Medio (ASL)",
+  label_qtd = "Total de Sentencas",
+  caption = "Teste Global de Kruskal-Wallis para ASL entre Niveis de Ensino"
+)
+```
+
+O teste de Kruskal-Wallis confirma variações intergrupos colossais ($\chi^2 = 557,7$, $p < 10^{-120}$).
+
+## Comparações Pareadas do Ensino Médio
+
+Aplicamos o **Teste U de Wilcoxon / Mann-Whitney** com correção de Bonferroni e cálculo do tamanho de efeito (*Cohen's d*).
+
+### Contrastes Pareados no Comprimento Médio da Sentença (`asl`)
+
+```{r comp-prop}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "asl",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (ASL em Palavras)",
+  casas_decimais = 2
+)
+```
+
+### Contrastes Pareados no Total de Sentenças (`total_sentencas`)
+
+```{r comp-qtd}
+tabela_comparacoes_ensino_medio(
+  df,
+  var_nome = "total_sentencas",
+  caption = "Comparações Pareadas: Ensino Médio vs. Demais Níveis (Total de Sentenças)",
+  casas_decimais = 2
+)
+```
+
+\newpage
+
+## Gráfico de Médias com Intervalos de Confiança (95%)
+
+A Figura 2 ilustra as médias do ASL com intervalos de confiança de 95% para cada nível educacional. A linha tracejada em vermelho destaca a média do Ensino Médio ($23,75$ palavras por sentença).
+
+```{r plot-ci, fig.width=7.5, fig.height=4.2}
+plot_medias_ci_niveis(
+  df,
+  var_nome = "asl",
+  ylab_val = "ASL Médio (Palavras por Sentença)",
+  titulo_grafico = "Comprimento Médio da Sentença (ASL) com IC de 95%"
+)
+```
+
+# Conclusões e Implicações para o Modelo Classificador
+
+O Comprimento Médio da Sentença (ASL) exibiu um **comportamento monotônico estritamente crescente** ao longo de toda a trajetória escolar:
+
+$$\text{Fund. I } (16,22) \quad < \quad \text{Fund. II } (21,25) \quad < \quad \text{Médio } (23,75) \quad < \quad \text{Superior } (27,06)$$
+
+1. **Ensino Médio vs. Fundamental I ($p = 1,85 \times 10^{-79}$, Cohen's $d = +0,57$)**:
+   Diferença estatística massiva com tamanho de efeito moderado/alto. Sentenças no Fundamental I possuem cerca de 7,5 palavras a menos que no Ensino Médio.
+
+2. **Ensino Médio vs. Fundamental II ($p = 1,48 \times 10^{-6}$, Cohen's $d = +0,19$)**:
+   Diferença altamente significativa. O Ensino Médio apresenta períodos em média 2,5 palavras mais longos que o Fundamental II, refletindo maior maturidade sintática.
+
+3. **Ensino Médio vs. Ensino Superior ($p = 4,17 \times 10^{-13}$, Cohen's $d = -0,21$)**:
+   Diferença altamente significativa. O Ensino Superior possui períodos significativamente mais longos que o Ensino Médio (27,06 vs. 23,75 palavras por sentença).
+
+| Nível Comparado | Decisão Estatística | Tamanho de Efeito | Utilidade no Classificador ALFA-Gen |
+| :--- | :--- | :--- | :--- |
+| **Médio vs. Fund. I** | **Diferença Massiva** | Moderado/Alto ($+0,57$) | Separação robusta da infância/alfabetização. |
+| **Médio vs. Fund. II** | **Diferença Significativa** | Pequeno ($+0,19$) | Separação da transição para a adolescência. |
+| **Médio vs. Superior** | **Diferença Significativa** | Pequeno/Médio ($-0,21$) | **Separa Médio de Superior continuamente**. |
+
+\newpage
+\appendix
+
+# Apêndice: Arquitetura Modular e Códigos das Funções
+
+* `extrair_features_asl.py`: Script Python/NLTK que segmenta sentenças (`sent_tokenize`) e palavras alfabéticas (`word_tokenize`) para computar o ASL em cada um dos 2.076 arquivos.
+* `R/funcoes_estatistica.R`: Rotinas inferenciais não paramétricas e contrastes pareados de Wilcoxon.
+* `R/funcoes_tabelas.R`: Formatação padronizada de tabelas LaTeX via `knitr::kable`.
+* `R/funcoes_graficos.R`: Painéis gráficos $2 \times 2$ e gráficos de intervalos de confiança com parametrização dinâmica.
