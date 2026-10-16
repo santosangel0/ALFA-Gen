@@ -14,6 +14,7 @@ from typing import Dict, Any, List
 import pandas as pd
 import numpy as np
 import spacy
+import spacy.cli
 import pyphen
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -119,7 +120,6 @@ class ExtratorFeatures:
         try:
             self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
         except OSError:
-            import spacy.cli
             spacy.cli.download("pt_core_news_sm")
             self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
         self.dic_pyphen = pyphen.Pyphen(lang="pt_BR")

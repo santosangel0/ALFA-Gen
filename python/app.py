@@ -26,6 +26,14 @@ if str(SCRIPT_DIR) not in sys.path:
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+# Garantir recursos essenciais do NLTK no deploy em nuvem (Streamlit Cloud)
+import nltk
+for _pkg in ["wordnet", "omw-1.4", "punkt", "punkt_tab"]:
+    try:
+        nltk.download(_pkg, quiet=True)
+    except Exception:
+        pass
+
 from extrator_features import ExtratorFeatures, NOMES_FEATURES_ORDENADAS, ROTULOS_FEATURES
 from classificador_onnx import ClassificadorONNX, MAPA_CLASSES
 from modificador_sinonimos import ModificadorSinonimos

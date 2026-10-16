@@ -16,15 +16,25 @@ import re
 import random
 from typing import Dict, List, Tuple, Any, Optional
 import spacy
-import wordfreq
+import spacy.cli
+import nltk
 from nltk.corpus import wordnet as wn
+import wordfreq
 
-# Mapeamento spaCy POS -> WordNet POS
+# Garantir recursos mínimos do NLTK antes de qualquer chamada
+for _pkg in ["wordnet", "omw-1.4", "punkt", "punkt_tab"]:
+    try:
+        nltk.download(_pkg, quiet=True)
+    except Exception:
+        pass
+
+# Mapeamento spaCy POS -> WordNet POS ('n', 'v', 'a', 'r')
+# Uso de literais para evitar acesso antecipado a wn.NOUN que aciona LazyCorpusLoader
 SPACY_TO_WN = {
-    "NOUN": wn.NOUN,
-    "VERB": wn.VERB,
-    "ADJ": wn.ADJ,
-    "ADV": wn.ADV
+    "NOUN": "n",
+    "VERB": "v",
+    "ADJ": "a",
+    "ADV": "r"
 }
 
 # Tabela Bidirecional de Concordância Nominal de Artigos, Contrações e Demonstrativos
@@ -229,7 +239,6 @@ class ModificadorSinonimos:
         try:
             self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
         except OSError:
-            import spacy.cli
             spacy.cli.download("pt_core_news_sm")
             self.nlp = spacy.load("pt_core_news_sm", disable=["ner"])
 
